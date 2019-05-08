@@ -1,8 +1,8 @@
-# Progetto-SO
+# Progetto Sistemi Operativi 2018/19
 Progetto per il corso di Sistemi Operativi, realizzato da Daniela Moretti e Francesco Schettino.
 
-# Obiettivo del progetto  
-## Implementare un file system  
+## Obiettivo del progetto  
+### Implementare un file system  
 Implementare l'interfaccia di un file system usando file binari.  
 Il file system riserva la prima parte del file per memorizzare:  
 * una lista collegata di blocchi liberi
