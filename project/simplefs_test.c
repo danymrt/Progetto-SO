@@ -7,21 +7,20 @@ int main(int agc, char** argv) {
 	printf("FirstBlock size %ld\n", sizeof(FirstFileBlock));
 	printf("DataBlock size %ld\n", sizeof(FileBlock));
 	printf("FirstDirectoryBlock size %ld\n", sizeof(FirstDirectoryBlock));
-	printf("DirectoryBlock size %ld\n", sizeof(DirectoryBlock));  
+	printf("DirectoryBlock size %ld\n", sizeof(DirectoryBlock));
 }
 
+/*
 // converte l'indice del blocco in due elementi: un indice dell'array e un carattere che mostra la posizione del bit all'interno dell'array stesso
 // converts a block index to an index in the array, and a char that indicates the offset of the bit inside the array
 BitMapEntryKey BitMap_blockToIndex(int num) {
 	// definiamo il blocco da restituire
 	BitMapEntryKey blocco;
-	// 
 	blocco->entry_num = ???; // int
 	blocco->bit_num = ???; // char 00000100
 	return blocco;
 }
 
-/*
 // converts a bit to a linear index
 int BitMap_indexToBlock(int entry, uint8_t bit_num) {
 }
@@ -36,7 +35,7 @@ int BitMap_set(BitMap* bmap, int pos, int status) {
 }
 
 
-// The blocks indices seen by the read/write functions 
+// The blocks indices seen by the read/write functions
 // have to be calculated after the space occupied by the bitmap
 
 // opens the file (creating it if necessary_
@@ -92,7 +91,7 @@ void SimpleFS_format(SimpleFS* fs) {
 FileHandle* SimpleFS_createFile(DirectoryHandle* d, const char* filename) {
 }
 
-// reads in the (preallocated) blocks array, the name of all files in a directory 
+// reads in the (preallocated) blocks array, the name of all files in a directory
 int SimpleFS_readDir(char** names, DirectoryHandle* d) {
 }
 
