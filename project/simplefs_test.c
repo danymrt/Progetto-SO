@@ -10,7 +10,6 @@ int main(int agc, char** argv) {
 	printf("DirectoryBlock size %ld\n", sizeof(DirectoryBlock));
 }
 
-/*
 // converte l'indice del blocco in due elementi: un indice dell'array e un carattere che mostra la posizione del bit all'interno dell'array stesso
 // converts a block index to an index in the array, and a char that indicates the offset of the bit inside the array
 BitMapEntryKey BitMap_blockToIndex(int num) {
@@ -21,6 +20,7 @@ BitMapEntryKey BitMap_blockToIndex(int num) {
 	return blocco;
 }
 
+/*
 // converts a bit to a linear index
 int BitMap_indexToBlock(int entry, uint8_t bit_num) {
 }
