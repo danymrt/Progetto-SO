@@ -1,14 +1,15 @@
 #pragma once
 #include <stdint.h>
+
 typedef struct{
 	int num_bits;
 	char* entries;
 }  BitMap;
 
 typedef struct {
-	int entry_num; // 3
-	char bit_num; // 00010000 => 4
-} BitMapEntryKey; // 3*8+4=28
+	int entry_num;
+	char bit_num;
+} BitMapEntryKey;
 
 // converts a block index to an index in the array,
 // and a char that indicates the offset of the bit inside the array

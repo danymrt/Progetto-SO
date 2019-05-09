@@ -4,31 +4,54 @@
 #include <stdio.h>
 
 int main(int agc, char** argv) {
+	printf("char size %ld\n", sizeof(char));
 	printf("FirstBlock size %ld\n", sizeof(FirstFileBlock));
 	printf("DataBlock size %ld\n", sizeof(FileBlock));
 	printf("FirstDirectoryBlock size %ld\n", sizeof(FirstDirectoryBlock));
 	printf("DirectoryBlock size %ld\n", sizeof(DirectoryBlock));
+
+	// Test BitMap_blockToIndex
+	int num = 4*BLOCK_SIZE;
+	BitMapEntryKey block = BitMap_blockToIndex(num);
+	printf("\nLa posizione del blocco è %d, ovvero entry %d con sfasamento %d\n", num, block.entry_num, block.bit_num);
+
+	// Test BitMap_indexToBlock
+	int posizione = BitMap_indexToBlock(block.entry_num, block.bit_num);
+	printf("\nAbbiamo la entry %d e lo sfasamento %d, ovvero la posizione %d\n", block.entry_num, block.bit_num, posizione);
 }
 
-// converte l'indice del blocco in due elementi: un indice dell'array e un carattere che mostra la posizione del bit all'interno dell'array stesso
-// converts a block index to an index in the array, and a char that indicates the offset of the bit inside the array
+// Prendiamo in ingresso il parametro "num" che rappresenta la posizione di un blocco nella memoria, lo convertiamo in due valori che rappresentano rispettivamente l'indice dell'entry e lo spiazzamento all'interno di essa
+// Converts a linear index to an index in the array, and a char that indicates the offset of the bit inside the array
 BitMapEntryKey BitMap_blockToIndex(int num) {
-	// definiamo il blocco da restituire
+	// dichiaro la BitMapEntryKey che conterrà le informazioni
 	BitMapEntryKey blocco;
-	blocco->entry_num = ???; // int
-	blocco->bit_num = ???; // char 00000100
+	// calcolo l'indice della entry
+	blocco.entry_num = num / ( sizeof(char) * 8 );
+	// calcolo lo spiazzamento della posizione reale all'interno della entry
+	blocco.bit_num = num - ( blocco.entry_num * 8 );
+	// restituisco la struct che contiene tutte le informazioni
 	return blocco;
 }
 
-/*
-// converts a bit to a linear index
+// Questa funzione converte l'indice dell'entry e lo spiazzamento nell'entry, in un intero che rappresenta la posizione del blocco nella memoria
+// Converts a bit to a linear index
 int BitMap_indexToBlock(int entry, uint8_t bit_num) {
+	// dichiaro la variabile da restituire
+	int posizione;
+	// ottengo la posizione di inizio di questa entry
+	posizione = entry * ( sizeof(char) * 8 );
+	// aggiungo lo spiazzamento per ottenere la posizione "precisa"
+	posizione = posizione + bit_num;
+	// restituisco la posizione precisa
+	return posizione;
 }
 
 // returns the index of the first bit having status "status"
 // in the bitmap bmap, and starts looking from position start
 int BitMap_get(BitMap* bmap, int start, int status) {
 }
+
+/*
 
 // sets the bit at index pos in bmap to status
 int BitMap_set(BitMap* bmap, int pos, int status) {
