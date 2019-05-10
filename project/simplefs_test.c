@@ -9,6 +9,11 @@ int main(int agc, char** argv) {
 	printf("DataBlock size %ld\n", sizeof(FileBlock));
 	printf("FirstDirectoryBlock size %ld\n", sizeof(FirstDirectoryBlock));
 	printf("DirectoryBlock size %ld\n", sizeof(DirectoryBlock));
+	printf("%c == %c\n", (char)97, 'a');
+
+	//Test BitMap_create
+	BitMap bitmap= BitMap_create(10,"ciao");
+	printf("\nBitMap contiene: %d e %s \n", bitmap.num_bits,bitmap.entries);
 
 	// Test BitMap_blockToIndex
 	int num = 4*BLOCK_SIZE;
@@ -18,6 +23,13 @@ int main(int agc, char** argv) {
 	// Test BitMap_indexToBlock
 	int posizione = BitMap_indexToBlock(block.entry_num, block.bit_num);
 	printf("\nAbbiamo la entry %d e lo sfasamento %d, ovvero la posizione %d\n", block.entry_num, block.bit_num, posizione);
+}
+
+BitMap BitMap_create(int num_bits, char* entries){
+	BitMap bitmap;
+	bitmap.num_bits = num_bits;
+	bitmap.entries = entries;
+	return bitmap;
 }
 
 // Prendiamo in ingresso il parametro "num" che rappresenta la posizione di un blocco nella memoria, lo convertiamo in due valori che rappresentano rispettivamente l'indice dell'entry e lo spiazzamento all'interno di essa
@@ -46,17 +58,21 @@ int BitMap_indexToBlock(int entry, uint8_t bit_num) {
 	return posizione;
 }
 
-// returns the index of the first bit having status "status"
-// in the bitmap bmap, and starts looking from position start
-int BitMap_get(BitMap* bmap, int start, int status) {
-}
+// sets the bit at index pos in bmap to status
+//Imposta il bit all'indice "pos" in bmap a "status"
+//int BitMap_set(BitMap* bmap, int pos, int status) {
+
+//}
 
 /*
-
-// sets the bit at index pos in bmap to status
-int BitMap_set(BitMap* bmap, int pos, int status) {
+// returns the index of the first bit having status "status"
+// in the bitmap bmap, and starts looking from position start
+//Restituisce l'indice del primo bit avente status "status" nella bitmap bmap, iniziando a cercare dalla posizione "start"
+int BitMap_get(BitMap* bmap, int start, int status) {
+	//for(int i=start; i < bmap->num_bit ; i++){
+		printf("entries: %c status: %d",bmap->entries,status);
+	//}
 }
-
 
 // The blocks indices seen by the read/write functions
 // have to be calculated after the space occupied by the bitmap
