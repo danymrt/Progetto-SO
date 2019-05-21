@@ -83,8 +83,8 @@ int BitMap_indexToBlock(BitMapEntryKey entry) {
 // Imposta il bit all'indice "pos" in bmap a "status"
 // Sets the bit at index pos in bmap to status
  int BitMap_set(BitMap* bmap, int pos, int status) {
-	BitMapEntryKey bmek=BitMap_blockToIndex(pos);
-	uint8_t mask= 128 >> bmek.bit_num;
+	BitMapEntryKey bmek = BitMap_blockToIndex(pos);
+	uint8_t mask = ((uint8_t) 128) >> ( (uint8_t) bmek.bit_num );
  	if(status) {
  		bmap->entries[bmek.entry_num] |= mask;
  	}else{
@@ -104,23 +104,14 @@ int BitMap_get(BitMap* bmap, int start, int status) {
 	// Per ogni bit a partire da "start", verifichiamo
 	for(i = start; i <= bmap->num_bits; i++) {
 		// Se sforiamo le entries, restituisce -1 perché "status" non è stato trovato
-		if(i == bmap->num_bits) {
-			return -1;
+		if(i == bmap->num_bits) return -1;
+		BitMapEntryKey bmek = BitMap_blockToIndex(start);
+		result = (bmap->entries[bmek.entry_num] & (128 >> bmek.bit_num));
+		// Se dobbiamo verificare "status=1", il risultato deve essere ">0", altrimenti deve essere "=0"
+		if(status == 1) {
+			if(result > 0) return i;
 		}else{
-			// Calcolo la posizione da cui iniziare a cercare
-			posizione = i / 8;
-			// Metto in "c" il carattere da analizzare
-			c = bmap->entries[posizione];
-			// Metto in "m" la mappa di bit da confrontare con il carattere
-			m = 128 >> (i - (posizione * 8));
-			// Memorizzo il risultato del loro AND in "result"
-			result = (c & m);
-			// Se dobbiamo verificare "status=1", il risultato deve essere ">0", altrimenti deve essere "=0"
-			if(status == 1) {
-				if(result > 0) return i;
-			}else{
-				if(result == 0) return i;
-			}
+			if(result == 0) return i;
 		}
 	}
 }
@@ -129,31 +120,31 @@ int BitMap_get(BitMap* bmap, int start, int status) {
 // Compila un Disk Header e riempie la Bitmap della dimensione appropriata con tutti 0 (per denotare lo spazio libero)
 // opens the file (creating it if necessary) allocates the necessary space on the disk calculates how big the bitmap should be
 // If the file was new compiles a disk header, and fills in the bitmap of appropriate size with all 0 (to denote the free space)
-// void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
-// 	// Apriamo il file ricevuto come parametro
-// 	FILE* file = fopen(filename, "rw+");
-// 	// Se il file non esiste o non viene aperto, blocchiamo la funzione
-// 	if(!file) return;
-//
-// 	// Creiamo un DiskHeader che andrà inserito nel DiskDriver
-// 	DiskHeader header;
-// 	// Impostiamo il numero dei blocchi all'interno del DiskHeader
-// 	header.num_blocks = num_blocks;
-// 	// Se il numero dei blocchi è multiplo di 8, impostiamo num_blocks/8, altrimenti aggiungiamo 1 (per arrotondare per eccesso)
-// 	if(num_blocks % 8 == 0) {
-// 		header.bitmap_blocks = num_blocks / 8;
-// 	}else{
-// 		header.bitmap_blocks = (num_blocks / 8) + 1;
-// 	}
-// 	//
-// 	header.bitmap_entries = ???;
-// 	header.free_blocks = ???;
-// 	header.first_free_block = ???;
-// 	disk->header = header;
-// 	disk->bitmap_data = ???;
-//
-//
-// }
+void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
+	// Apriamo il file ricevuto come parametro
+	FILE* file = fopen(filename, "rw+");
+	// Se il file non esiste o non viene aperto, blocchiamo la funzione
+	if(!file) return;
+
+	// Creiamo un DiskHeader che andrà inserito nel DiskDriver
+	DiskHeader header;
+	// Impostiamo il numero dei blocchi all'interno del DiskHeader
+	header.num_blocks = num_blocks;
+	// Se il numero dei blocchi è multiplo di 8, impostiamo num_blocks/8, altrimenti aggiungiamo 1 (per arrotondare per eccesso)
+	if(num_blocks % 8 == 0) {
+		header.bitmap_blocks = num_blocks / 8;
+	}else{
+		header.bitmap_blocks = (num_blocks / 8) + 1;
+	}
+	//
+	header.bitmap_entries = ???;
+	header.free_blocks = ???;
+	header.first_free_block = ???;
+	disk->header = header;
+	disk->bitmap_data = ???;
+
+
+}
 
 /*
 
