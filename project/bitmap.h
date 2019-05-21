@@ -3,7 +3,7 @@
 
 typedef struct{
 	int num_bits;
-	char* entries;
+	uint8_t* entries;
 }  BitMap;
 
 typedef struct {
@@ -11,7 +11,7 @@ typedef struct {
 	char bit_num;
 } BitMapEntryKey;
 
-BitMap BitMap_create();
+void BitMap_init();
 
 // converts a block index to an index in the array,
 // and a char that indicates the offset of the bit inside the array

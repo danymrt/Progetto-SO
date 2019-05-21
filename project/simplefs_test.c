@@ -2,39 +2,65 @@
 #include "disk_driver.h"
 #include "bitmap.h"
 #include <stdio.h>
+#include <string.h>
 
 int main(int agc, char** argv) {
-	printf("char size %ld\n", sizeof(char));
-	printf("int size %ld\n", sizeof(int));
-	printf("FirstBlock size %ld\n", sizeof(FirstFileBlock));
-	printf("DataBlock size %ld\n", sizeof(FileBlock));
-	printf("FirstDirectoryBlock size %ld\n", sizeof(FirstDirectoryBlock));
-	printf("DirectoryBlock size %ld\n", sizeof(DirectoryBlock));
+	// printf("char size %ld\n", sizeof(char));
+	// printf("int size %ld\n", sizeof(int));
+	// printf("FirstBlock size %ld\n", sizeof(FirstFileBlock));
+	// printf("DataBlock size %ld\n", sizeof(FileBlock));
+	// printf("FirstDirectoryBlock size %ld\n", sizeof(FirstDirectoryBlock));
+	// printf("DirectoryBlock size %ld\n", sizeof(DirectoryBlock));
 
 	// Test BitMap_create
-	BitMap bitmap = BitMap_create(10,"ciao");
-	printf("\nBitMap contiene: %d e %s \n", bitmap.num_bits, bitmap.entries);
+	BitMap bitmap;
+	BitMap_init(&bitmap, 40, "pippo");
+	printf("\nBitMap contiene: %d e %s", bitmap.num_bits, bitmap.entries);
 
 	// Test BitMap_blockToIndex
 	int num = 4 * BLOCK_SIZE;
 	BitMapEntryKey block = BitMap_blockToIndex(num);
-	printf("\nLa posizione del blocco è %d, ovvero entry %d con sfasamento %d\n", num, block.entry_num, block.bit_num);
+	printf("\n\nLa posizione del blocco è %d, ovvero entry %d con sfasamento %d", num, block.entry_num, block.bit_num);
 
 	// Test BitMap_indexToBlock
 	int posizione = BitMap_indexToBlock(block.entry_num, block.bit_num);
-	printf("\nAbbiamo la entry %d e lo sfasamento %d, ovvero la posizione %d\n", block.entry_num, block.bit_num, posizione);
+	printf("\n\nAbbiamo la entry %d e lo sfasamento %d, ovvero la posizione %d", block.entry_num, block.bit_num, posizione);
+
+	// Test BitMap_set
+	// printf("\n\nIl vecchio valore di \"entries\" in \"bitmap\" è %s", bitmap.entries);
+	// int bitmap_set = BitMap_set(&bitmap, 6, 1);
+	// printf("\nBitMap_set() ha restituito %d", bitmap_set);
+	// printf("\nIl nuovo valore di \"entries\" in \"bitmap\" è %c", bitmap.entries);
+
+	// Test BitMap_get
+	printf("\n\nLa BitMap contiene %s\n", bitmap.entries);
+	int start = 1;
+	int status = 0;
+	printf("Verifichiamo con start=%d e status=%d ... %d\n", start, status, BitMap_get(&bitmap, start, status));
+	start = 3;
+	status = 0;
+	printf("Verifichiamo con start=%d e status=%d ... %d\n", start, status, BitMap_get(&bitmap, start, status));
+	start = 4;
+	status = 0;
+	printf("Verifichiamo con start=%d e status=%d ... %d\n", start, status, BitMap_get(&bitmap, start, status));
+	start = 0;
+	status = 1;
+	printf("Verifichiamo con start=%d e status=%d ... %d\n", start, status, BitMap_get(&bitmap, start, status));
+
+	// DiskDriver disk;
+	// char* filename = "test.txt";
+	// int num_blocks = 100;
+	// DiskDriver_init(&disk, filename, num_blocks);
+
+	printf("\n\n");
 }
 
 // Funzione che restituisce una BitMap contenente i valori passati come argomenti
-BitMap BitMap_create(int num_bits, char* entries){
-	// Definisco una BitMap
-	BitMap bitmap;
+void BitMap_init(BitMap* bitmap, int num_bits, uint8_t* entries){
 	// Assegno il valore preso come argomento a num_bits
-	bitmap.num_bits = num_bits;
+	bitmap->num_bits = num_bits;
 	// Assegno il valore preso come argomento a entries
-	bitmap.entries = entries;
-	// Restituisco la BitMap
-	return bitmap;
+	bitmap->entries = (entries);
 }
 
 // Prendiamo in ingresso il parametro "num" che rappresenta la posizione di un blocco nella memoria, lo convertiamo in due valori che rappresentano rispettivamente l'indice dell'entry e lo spiazzamento all'interno di essa
@@ -65,31 +91,79 @@ int BitMap_indexToBlock(int entry, uint8_t bit_num) {
 
 // Imposta il bit all'indice "pos" in bmap a "status"
 // Sets the bit at index pos in bmap to status
-int BitMap_set(BitMap* bmap, int pos, int status) {
+// int BitMap_set(BitMap* bmap, int pos, int status) {
+// 	// TODO: NON FUNZIONA!!!
+// 	if(status == 0) {
+// 		bmap->entries = *(bmap->entries) & ~ ( 128 >> pos );
+// 	}else{
+// 		bmap->entries = *(bmap->entries) | ( 128 >> pos );
+// 	}
+// 	return status;
+// }
 
-}
-
-/*
 // Restituisce l'indice del primo bit avente status "status" nella bitmap bmap, iniziando a cercare dalla posizione "start"
-// returns the index of the first bit having status "status"
-// in the bitmap bmap, and starts looking from position start
+// Returns the index of the first bit having status "status" in the bitmap bmap, and starts looking from position start
 int BitMap_get(BitMap* bmap, int start, int status) {
-	for(int i=start; i < bmap->num_bit ; i++){
-		printf("entries: %c status: %d",bmap->entries,status);
+	// Se si inizia a cercare da una posizione che esce dall'entry, si restituisce -1
+	if(start > bmap->num_bits) return -1;
+	// Definiamo le variabili che si useranno all'interno
+	int posizione, i, result;
+	uint8_t c, m;
+	// Per ogni bit a partire da "start", verifichiamo
+	for(i = start; i <= bmap->num_bits; i++) {
+		// Se sforiamo le entries, restituisce -1 perché "status" non è stato trovato
+		if(i == bmap->num_bits) {
+			return -1;
+		}else{
+			// Calcolo la posizione da cui iniziare a cercare
+			posizione = i / 8;
+			// Metto in "c" il carattere da analizzare
+			c = bmap->entries[posizione];
+			// Metto in "m" la mappa di bit da confrontare con il carattere
+			m = 128 >> (i - (posizione * 8));
+			// Memorizzo il risultato del loro AND in "result"
+			result = (c & m);
+			// Se dobbiamo verificare "status=1", il risultato deve essere ">0", altrimenti deve essere "=0"
+			if(status == 1) {
+				if(result > 0) return i;
+			}else{
+				if(result == 0) return i;
+			}
+		}
 	}
 }
 
-// The blocks indices seen by the read/write functions
-// have to be calculated after the space occupied by the bitmap
+// Apre il file (creandolo, se necessario), allocando lo spazio necessario sul disco e calcolando quanto deve essere grane la mappa se il file è stato appena creato.
+// Compila un Disk Header e riempie la Bitmap della dimensione appropriata con tutti 0 (per denotare lo spazio libero)
+// opens the file (creating it if necessary) allocates the necessary space on the disk calculates how big the bitmap should be
+// If the file was new compiles a disk header, and fills in the bitmap of appropriate size with all 0 (to denote the free space)
+// void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
+// 	// Apriamo il file ricevuto come parametro
+// 	FILE* file = fopen(filename, "rw+");
+// 	// Se il file non esiste o non viene aperto, blocchiamo la funzione
+// 	if(!file) return;
+//
+// 	// Creiamo un DiskHeader che andrà inserito nel DiskDriver
+// 	DiskHeader header;
+// 	// Impostiamo il numero dei blocchi all'interno del DiskHeader
+// 	header.num_blocks = num_blocks;
+// 	// Se il numero dei blocchi è multiplo di 8, impostiamo num_blocks/8, altrimenti aggiungiamo 1 (per arrotondare per eccesso)
+// 	if(num_blocks % 8 == 0) {
+// 		header.bitmap_blocks = num_blocks / 8;
+// 	}else{
+// 		header.bitmap_blocks = (num_blocks / 8) + 1;
+// 	}
+// 	//
+// 	header.bitmap_entries = ???;
+// 	header.free_blocks = ???;
+// 	header.first_free_block = ???;
+// 	disk->header = header;
+// 	disk->bitmap_data = ???;
+//
+//
+// }
 
-// opens the file (creating it if necessary_
-// allocates the necessary space on the disk
-// calculates how big the bitmap should be
-// if the file was new
-// compiles a disk header, and fills in the bitmap of appropriate size
-// with all 0 (to denote the free space);
-void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
-}
+/*
 
 // reads the block in position block_num
 // returns -1 if the block is free accrding to the bitmap
