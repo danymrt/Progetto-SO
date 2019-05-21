@@ -3,6 +3,8 @@
 #include "bitmap.h"
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 int main(int agc, char** argv) {
 	// printf("char size %ld\n", sizeof(char));
@@ -13,9 +15,11 @@ int main(int agc, char** argv) {
 	// printf("DirectoryBlock size %ld\n", sizeof(DirectoryBlock));
 
 	// Test BitMap_create
-	BitMap bitmap;
-	BitMap_init(&bitmap, 40, "pippo");
-	printf("\nBitMap contiene: %d e %s", bitmap.num_bits, bitmap.entries);
+	DiskDriver disk;
+	char* filename = "test.txt";
+	int num_blocks = 100;
+	DiskDriver_init(&disk, filename, num_blocks);
+	BitMap bitmap=*(disk.bitmap);
 
 	// Test BitMap_blockToIndex
 	int num = 4 * BLOCK_SIZE;
@@ -28,7 +32,7 @@ int main(int agc, char** argv) {
 
 	// Test BitMap_set
 	printf("\n\nIl vecchio valore di \"entries\" in \"bitmap\" è %s", bitmap.entries);
-	int bitmap_set = BitMap_set(&bitmap, 2, 1);
+	//int bitmap_set = BitMap_set(&bitmap, 2, 1);
 	//printf("\nBitMap_set() ha restituito %d", bitmap_set);
 	printf("\nIl nuovo valore di \"entries\" in \"bitmap\" è %s", bitmap.entries);
 
@@ -46,12 +50,6 @@ int main(int agc, char** argv) {
 	start = 0;
 	status = 1;
 	printf("Verifichiamo con start=%d e status=%d ... %d\n", start, status, BitMap_get(&bitmap, start, status));
-
-	// DiskDriver disk;
-	// char* filename = "test.txt";
-	// int num_blocks = 100;
-	// DiskDriver_init(&disk, filename, num_blocks);
-
 	printf("\n\n");
 }
 
@@ -122,9 +120,10 @@ int BitMap_get(BitMap* bmap, int start, int status) {
 // If the file was new compiles a disk header, and fills in the bitmap of appropriate size with all 0 (to denote the free space)
 void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 	// Apriamo il file ricevuto come parametro
-	FILE* file = fopen(filename, "rw+");
+	int file = open(filename, O_CREAT | O_RDWR, 0666);
 	// Se il file non esiste o non viene aperto, blocchiamo la funzione
 	if(!file) return;
+	disk->fd=file;
 
 	// Creiamo un DiskHeader che andrà inserito nel DiskDriver
 	DiskHeader header;
@@ -137,12 +136,14 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 		header.bitmap_blocks = (num_blocks / 8) + 1;
 	}
 	//
-	header.bitmap_entries = ???;
-	header.free_blocks = ???;
-	header.first_free_block = ???;
-	disk->header = header;
-	disk->bitmap_data = ???;
+	header.bitmap_entries = ((disk->bitmap->num_bits)/8)+1;
 
+	header.free_blocks = 0; //TODO
+	header.first_free_block = 0; //TODO
+	disk->header = &header;
+	BitMap bmap;
+	BitMap_init(&bmap,48,"pippoh");
+	disk->bitmap = &bmap;
 
 }
 
