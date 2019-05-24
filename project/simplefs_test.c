@@ -5,6 +5,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
+
 
 int main(int agc, char** argv) {
 	// printf("char size %ld\n", sizeof(char));
@@ -50,7 +52,16 @@ int main(int agc, char** argv) {
 	start = 0;
 	status = 1;
 	printf("Verifichiamo con start=%d e status=%d ... %d\n", start, status, BitMap_get(&bitmap, start, status));
-	printf("\n\n");
+
+	//Test DiskDriver_writeBlock
+	int block_num=0;
+	void* src="hello geek";
+	printf("Il risultato della write con block_num=%d è: %d\n", block_num, DiskDriver_writeBlock(&disk,src,block_num));
+
+	//Test DiskDriver_readBlock
+	void* dest;
+	printf("Il risultato della read con block_num=%d è: %d\n", block_num, DiskDriver_readBlock(&disk,dest,block_num));
+
 }
 
 // Funzione che restituisce una BitMap contenente i valori passati come argomenti
@@ -147,19 +158,40 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 
 }
 
-/*
 
 // reads the block in position block_num
 // returns -1 if the block is free accrding to the bitmap
 // 0 otherwise
-int DiskDriver_readBlock(DiskDriver* disk, void* dest, int block_num) {
+
+//sia off_set che ssize_t sono long ovvero 8 byte
+int DiskDriver_readBlock(DiskDriver* disk, void* dest, int block_num){
+	//lseek is a system call that is used to change the location of the read/write pointer of a file descriptor
+	off_t start=lseek(disk->fd,block_num,SEEK_SET); //block_num è the offset of the pointer (measured in bytes).
+	if(start==-1) return -1;
+	//printf("\n start=%ld\n", start);
+
+	int rz= read(disk->fd,dest ,BLOCK_SIZE);
+
+	if(rz!=0) return -1;
+	else return 0;
 }
+
 
 // writes a block in position block_num, and alters the bitmap accordingly
 // returns -1 if operation not possible
 int DiskDriver_writeBlock(DiskDriver* disk, void* src, int block_num) {
+	//sposto il puntatore nel blocco che voglio io
+	off_t start=lseek(disk->fd,block_num,SEEK_SET);
+	if(start==-1) return -1;
+
+	int sz = write(disk->fd,src,BLOCK_SIZE);
+  if(sz==-1) return -1;
+
+	if(sz!=BLOCK_SIZE) return -1;
+	else return 0;
 }
 
+/*
 // frees a block in position block_num, and alters the bitmap accordingly
 // returns -1 if operation not possible
 int DiskDriver_freeBlock(DiskDriver* disk, int block_num) {

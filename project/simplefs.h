@@ -62,7 +62,7 @@ typedef struct {
 
 
 
-  
+
 typedef struct {
   DiskDriver* disk;
   // add more fields if needed
@@ -102,7 +102,7 @@ void SimpleFS_format(SimpleFS* fs);
 // an empty file consists only of a block of type FirstBlock
 FileHandle* SimpleFS_createFile(DirectoryHandle* d, const char* filename);
 
-// reads in the (preallocated) blocks array, the name of all files in a directory 
+// reads in the (preallocated) blocks array, the name of all files in a directory
 int SimpleFS_readDir(char** names, DirectoryHandle* d);
 
 
@@ -142,7 +142,3 @@ int SimpleFS_mkDir(DirectoryHandle* d, char* dirname);
 // returns -1 on failure 0 on success
 // if a directory, it removes recursively all contained files
 int SimpleFS_remove(SimpleFS* fs, char* filename);
-
-
-  
-
