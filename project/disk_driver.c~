@@ -25,7 +25,7 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 	}
 
 	int file;
-/*
+
 	// Se il file esiste, calcoliamo alcuni dati, se non esiste, lo creiamo e inseriamo "Ciao mondo"
 	if(!access(filename, F_OK)) { // se il file esiste
 
@@ -40,7 +40,7 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 		disk->fd=file;
 	
 	}else{ // se il file è stato appena creato
-*/
+
 		// Apriamo il file ricevuto come parametro, se non esiste, lo creiamo
 		file = open(filename, O_CREAT | O_RDWR, 0666);
 
@@ -55,9 +55,9 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 
 		write(file, "Ciao mondoh", 11);
 		//posix_fallocate(file, 0, bitmap_entries);
-		/*
+		
 	}
-*/
+
 	// Mi calcolo le dimensioni del file aperto
 	struct stat file_stat;
 	fstat(file, &file_stat);
@@ -75,6 +75,7 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 
 	// Creiamo un DiskHeader che andrà inserito nel DiskDriver
 	DiskHeader* header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries, PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
+	// WORKING - Dopo questa riga, il file appena creato viene modificato, come se la mmap scrivesse sullo stesso spazio di memoria
 /*	header->num_blocks = num_blocks;
 	header->bitmap_blocks = num_blocks;
 	header->bitmap_entries = bitmap_entries;

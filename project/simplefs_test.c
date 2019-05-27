@@ -17,7 +17,7 @@ int main(int agc, char** argv) {
 	// printf("DirectoryBlock size %ld\n", sizeof(DirectoryBlock));
 
 	// Test BitMap_create
-	printf("\n+++++ Test DiskDriver_init() e, all'interno, BitMap_init()");
+	printf("\n+++ Test DiskDriver_init() e, all'interno, BitMap_init()");
 	DiskDriver disk;
 	char* filename = "test.txt";
 	int num_blocks = 88;
