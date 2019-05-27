@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 
 int main(int agc, char** argv) {
@@ -32,36 +33,72 @@ int main(int agc, char** argv) {
 	int posizione = BitMap_indexToBlock(block);
 	printf("\n\nAbbiamo la entry %d e lo sfasamento %d, ovvero la posizione %d", block.entry_num, block.bit_num, posizione);
 
-	// Test BitMap_set
-	printf("\n\nIl vecchio valore di \"entries\" in \"bitmap\" è %s", bitmap.entries);
-	//int bitmap_set = BitMap_set(&bitmap, 2, 1);
-	//printf("\nBitMap_set() ha restituito %d", bitmap_set);
-	printf("\nIl nuovo valore di \"entries\" in \"bitmap\" è %s", bitmap.entries);
+		// Test BitMap_set
+		BitMap* bimap = (BitMap*)malloc(sizeof(BitMap));
+    bimap ->num_bits = 32;
+    bimap ->entries = (char*)malloc(sizeof(char) * 4);
+    bimap ->entries[0] = 'c';
+    bimap ->entries[1] = 'i';
+    bimap ->entries[2] = 'a';
+    bimap ->entries[3] = 'o';
+		char a;
+    int res;
+    int i;
+		printf("\n");
+		for(i=0; i<= (bimap ->num_bits)/8; i++){
+			printf("%c",bimap ->entries[i]);
+		}
+
+    a = bimap ->entries[2];
+		printf("\n%c\n",a);
+    printf("%d come entry, setto a 1 il primo bit\n");
+    for (i = 7; i >= 0; i--) {
+        printf("%d", !!((a >> i) & 0x01));
+    }
+    printf("\n");
+
+    res = BitMap_set(bimap, 17, 1);
+    printf("res: %d\n", res);
+
+    a = bimap ->entries[2];
+		printf("%c\n",a);
+    for (i = 7; i >= 0; i--) {
+        printf("%d", !!((a >> i) & 0x01));
+    }
+    printf("\n\n");
 
 	// Test BitMap_get
-	printf("\n\nLa BitMap contiene %s\n", bitmap.entries);
-	int start = 1;
+	for(i=0; i<= (bimap ->num_bits)/8; i++){
+		printf("%c",bimap ->entries[i]);
+	}
+	printf("\n");
+	int start = 6;
 	int status = 0;
-	printf("Verifichiamo con start=%d e status=%d ... %d\n", start, status, BitMap_get(&bitmap, start, status));
+	printf("Verifichiamo con start=%d e status=%d ... %d\n", start, status, BitMap_get(bimap, start, status));
 	start = 3;
 	status = 1;
-	printf("Verifichiamo con start=%d e status=%d ... %d\n", start, status, BitMap_get(&bitmap, start, status));
-	start = 4;
+	printf("Verifichiamo con start=%d e status=%d ... %d\n", start, status, BitMap_get(bimap, start, status));
+	start = 12;
 	status = 0;
-	printf("Verifichiamo con start=%d e status=%d ... %d\n", start, status, BitMap_get(&bitmap, start, status));
-	start = 0;
+	printf("Verifichiamo con start=%d e status=%d ... %d\n", start, status, BitMap_get(bimap, start, status));
+	start = 13;
 	status = 1;
-	printf("Verifichiamo con start=%d e status=%d ... %d\n", start, status, BitMap_get(&bitmap, start, status));
+	printf("Verifichiamo con start=%d e status=%d ... %d\n", start, status, BitMap_get(bimap, start, status));
 
-	//Test DiskDriver_writeBlock
+	// Test DiskDriver_writeBlock
 	int block_num=0;
 	void* src="hello geek";
 	printf("Il risultato della write con block_num=%d è: %d\n", block_num, DiskDriver_writeBlock(&disk,src,block_num));
 
-	//Test DiskDriver_readBlock
+	// Test DiskDriver_readBlock
 	void* dest;
 	printf("Il risultato della read con block_num=%d è: %d\n", block_num, DiskDriver_readBlock(&disk,dest,block_num));
 
+	// Test DiskDriver_freeBlock
+	//printf("\n Il risultato della FreeBlock è: %d \n",DiskDriver_freeBlock(&disk,0));
+
+	// Test DiskDriver_getFreeBlock
+	printf("\n Il risultato della getFreeBlock è: %d \n",DiskDriver_getFreeBlock(&disk,0));
 }
 
 // Funzione che restituisce una BitMap contenente i valori passati come argomenti
@@ -92,14 +129,16 @@ int BitMap_indexToBlock(BitMapEntryKey entry) {
 // Imposta il bit all'indice "pos" in bmap a "status"
 // Sets the bit at index pos in bmap to status
  int BitMap_set(BitMap* bmap, int pos, int status) {
-	BitMapEntryKey bmek = BitMap_blockToIndex(pos);
-	uint8_t mask = ((uint8_t) 128) >> ( (uint8_t) bmek.bit_num );
- 	if(status) {
- 		bmap->entries[bmek.entry_num] |= mask;
- 	}else{
-		bmap->entries[bmek.entry_num] &= (~ mask );
- 	}
- 	return status;
+    BitMapEntryKey bmek = BitMap_blockToIndex(pos);
+		uint8_t mask= 1 << bmek.bit_num;
+		if(status){
+			bmap->entries[bmek.entry_num] |= mask;
+		}else{
+    	bmap->entries[bmek.entry_num] &= ~(mask);
+    }
+
+    return status;
+
  }
 
 // Restituisce l'indice del primo bit avente status "status" nella bitmap bmap, iniziando a cercare dalla posizione "start"
@@ -114,8 +153,8 @@ int BitMap_get(BitMap* bmap, int start, int status) {
 	for(i = start; i <= bmap->num_bits; i++) {
 		// Se sforiamo le entries, restituisce -1 perché "status" non è stato trovato
 		if(i == bmap->num_bits) return -1;
-		BitMapEntryKey bmek = BitMap_blockToIndex(start);
-		result = (bmap->entries[bmek.entry_num] & (128 >> bmek.bit_num));
+		BitMapEntryKey bmek = BitMap_blockToIndex(i);
+		result = (bmap->entries[bmek.entry_num] & (1 << bmek.bit_num)); //TODO modificarlo
 		// Se dobbiamo verificare "status=1", il risultato deve essere ">0", altrimenti deve essere "=0"
 		if(status == 1) {
 			if(result > 0) return i;
@@ -142,7 +181,7 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 	header.num_blocks = num_blocks;
 	// Se il numero dei blocchi è multiplo di 8, impostiamo num_blocks/8, altrimenti aggiungiamo 1 (per arrotondare per eccesso)
 	if(num_blocks % 8 == 0) {
-		header.bitmap_blocks = num_blocks / 8;
+		header.bitmap_blocks = num_blocks / 8; //TODO
 	}else{
 		header.bitmap_blocks = (num_blocks / 8) + 1;
 	}
@@ -153,7 +192,7 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 	header.first_free_block = 0; //TODO
 	disk->header = &header;
 	BitMap bmap;
-	BitMap_init(&bmap,48,"pippoh");
+	BitMap_init(&bmap,720,"000000000000000000000000000000000000000000000000000000000000000000000000000000");
 	disk->bitmap = &bmap;
 
 }
@@ -191,16 +230,41 @@ int DiskDriver_writeBlock(DiskDriver* disk, void* src, int block_num) {
 	else return 0;
 }
 
-/*
 // frees a block in position block_num, and alters the bitmap accordingly
 // returns -1 if operation not possible
 int DiskDriver_freeBlock(DiskDriver* disk, int block_num) {
+	BitMap* bmap= disk->bitmap;
+	int i;
+	int indice= block_num*BLOCK_SIZE;
+	for(i=indice ; i< indice+BLOCK_SIZE; i++){
+		int n=BitMap_set(bmap,i,0);
+		if(n<0) return -1;
+	}
+	return 0;
+
 }
 
 // returns the first free blockin the disk from position (checking the bitmap)
 int DiskDriver_getFreeBlock(DiskDriver* disk, int start) {
+	BitMap* bmap= disk->bitmap;
+	int num=disk->header->num_blocks;
+	int i,j;
+	int indice= start*BLOCK_SIZE;
+	for(i=0; i< num * BLOCK_SIZE; i=i+BLOCK_SIZE){
+		for(j=0; j<=BLOCK_SIZE; j++){
+			if(j==BLOCK_SIZE){
+				return i;
+			}
+			int n=BitMap_get(bmap,j+i,0);
+			if(n!=j+i){
+				break;
+			}
+		}
+	}
+	printf("\n i=%d j= %d \n",i,j);
 }
 
+/*
 // writes the data (flushing the mmaps)
 int DiskDriver_flush(DiskDriver* disk) {
 }
