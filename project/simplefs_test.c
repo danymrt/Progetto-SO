@@ -9,17 +9,11 @@
 #include <stdlib.h>
 
 int main(int agc, char** argv) {
-	// printf("char size %ld\n", sizeof(char));
-	// printf("int size %ld\n", sizeof(int));
-	// printf("FirstBlock size %ld\n", sizeof(FirstFileBlock));
-	// printf("DataBlock size %ld\n", sizeof(FileBlock));
-	// printf("FirstDirectoryBlock size %ld\n", sizeof(FirstDirectoryBlock));
-	// printf("DirectoryBlock size %ld\n", sizeof(DirectoryBlock));
 
 	// Test BitMap_create 
-	printf("\n++++ Test DiskDriver_init() e, all'interno, BitMap_init()");
+	printf("\n+++ Test DiskDriver_init(), BitMap_init(), DiskDriver_getFreeBlock(), BitMap_get()");
 	DiskDriver disk;
-	DiskDriver_init(&disk, "test.txt", 100);
+	DiskDriver_init(&disk, "test.txt", 15);
 	BitMap bitmap=*(disk.bitmap);
 	printf("\n    BitMap creata e inizializzata correttamente");
 	printf("\n    Primo blocco libero => %d", disk.header->first_free_block); // WORKING: correggere il risultato messo qui dentro dalla DiskDriver_getFreeBlock()
@@ -37,63 +31,24 @@ int main(int agc, char** argv) {
 
 	// Test BitMap_set
 	printf("\n\n+++ Test BitMap_set()");
-	BitMap* bimap = (BitMap*)malloc(sizeof(BitMap));
-  bimap ->num_bits = 32;
-  bimap ->entries = (char*)malloc(sizeof(char) * 4);
-  bimap ->entries[0] = 'c';
-  bimap ->entries[1] = 'i';
-  bimap ->entries[2] = 'a';
-  bimap ->entries[3] = 'o';
-	char a;
-  int res;
-  int i;
-	printf("\n"); 
-	for(i=0; i<= (bimap ->num_bits)/8; i++){
-		printf("%c",bimap ->entries[i]);
-	}
-
-  a = bimap ->entries[2];
-	printf("\n%c\n",a);
-  //printf("%d come entry, setto a 1 il primo bit\n"); 
-  for (i = 7; i >= 0; i--) {
-      printf("%d", !!((a >> i) & 0x01));
-  }
-  printf("\n");
-
-  res = BitMap_set(bimap, 17, 1);
-  printf("res: %d\n", res);
-
-  a = bimap ->entries[2];
-	printf("%c\n",a);
-  for (i = 7; i >= 0; i--) {
-      printf("%d", !!((a >> i) & 0x01));
-  }
-	for(i=0; i<= (bimap ->num_bits)/8; i++){
-		printf("%c",bimap ->entries[i]);
-	}
-  printf("\n");
+	printf("\n    La bitmap contiene: %s", disk.bitmap->entries);
+	printf("\n    Eseguo BitMap_set(bitmap, 17, 1)...");
+	BitMap_set(disk.bitmap, 17, 1);
+	printf("\n    La bitmap contiene: %s", disk.bitmap->entries);
 
 
 	// Test BitMap_get
-	printf("\n+++ Test BitMap_get()");
-	printf("\n    bimap->entries contiene: ");
-	for(i = 0; i <= ( bimap->num_bits ) / 8; i++){
-		printf("%c", bimap->entries[i]);
-	} 
-	printf("\n    bimap->entries contiene, in binario: "); // TODO: Modificare la stampa in binario
-	printf("\n");
-	int start = 6;
-	int status = 0; 
-	printf("    Partiamo dalla posizione %d e cerchiamo %d => %d\n", start, status, BitMap_get(bimap, start, status));
-	start = 3;   
-	status = 1;
-	printf("    Partiamo dalla posizione %d e cerchiamo %d => %d\n", start, status, BitMap_get(bimap, start, status));
-	start = 12;
-	status = 0;
-	printf("    Partiamo dalla posizione %d e cerchiamo %d => %d\n", start, status, BitMap_get(bimap, start, status));
-	start = 13;
-	status = 1;
-	printf("    Partiamo dalla posizione %d e cerchiamo %d => %d\n", start, status, BitMap_get(bimap, start, status));
+	printf("\n\n+++ Test BitMap_get()");
+	printf("\n    bitmap->entries contiene: %s", disk.bitmap->entries);
+	printf("\n    bitmap->entries contiene, in binario: "); // TODO: Stampare la disk.bitmap->entries in binario
+	int start = 6, status = 0; 
+	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(disk.bitmap, start, status));
+	start = 3, status = 1;
+	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(disk.bitmap, start, status));
+	start = 12, status = 0;
+	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(disk.bitmap, start, status));
+	start = 13, status = 1;
+	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(disk.bitmap, start, status));
 
 	/*
 	// Test DiskDriver_writeBlock
@@ -118,4 +73,6 @@ int main(int agc, char** argv) {
 	printf("\n+++ Test DiskDriver_getFreeBlock()");
 	printf("\n    Il risultato della getFreeBlock è: %d \n",DiskDriver_getFreeBlock(&disk,0));
 	*/
+
+	printf("\n\n");
 }

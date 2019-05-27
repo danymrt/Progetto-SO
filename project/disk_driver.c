@@ -42,7 +42,7 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 			return;
 		}
 		disk->fd=file;
-		write(file, "\0", 1); // inizializzo il file per evitare "bus error"
+		write(file, "Ciao mondo", 10); // inizializzo il file per evitare "bus error"
 	}
 
 	// Mi calcolo le dimensioni del file aperto
@@ -61,7 +61,7 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 
 	// Creiamo un DiskHeader che andrà inserito nel DiskDriver
 	disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries, PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
-	disk->header->num_blocks = num_blocks;
+	disk->header->num_blocks = num_blocks;	// WORKING: Da questa riga in poi, il file viene sovrascritto, correggere.
 	disk->header->bitmap_blocks = num_blocks;
 	disk->header->bitmap_entries = bitmap_entries;
 	disk->header->free_blocks = num_blocks; 
@@ -71,9 +71,7 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 }
 
 
-// reads the block in position block_num
-// returns -1 if the block is free accrding to the bitmap
-// 0 otherwise
+// reads the block in position block_num, returns -1 if the block is free accrding to the bitmap 0 otherwise
 int DiskDriver_readBlock(DiskDriver* disk, void* dest, int block_num){
 
 	//lseek is a system call that is used to change the location of the read/write pointer of a file descriptor
@@ -88,8 +86,7 @@ int DiskDriver_readBlock(DiskDriver* disk, void* dest, int block_num){
 }
 
 
-// writes a block in position block_num, and alters the bitmap accordingly
-// returns -1 if operation not possible
+// writes a block in position block_num, and alters the bitmap accordingly, returns -1 if operation not possible
 int DiskDriver_writeBlock(DiskDriver* disk, void* src, int block_num) {
 	//sposto il puntatore nel blocco che voglio io
 	off_t start=lseek(disk->fd,block_num,SEEK_SET);
@@ -102,8 +99,7 @@ int DiskDriver_writeBlock(DiskDriver* disk, void* src, int block_num) {
 	else return 0;
 }
 
-// frees a block in position block_num, and alters the bitmap accordingly
-// returns -1 if operation not possible
+// frees a block in position block_num, and alters the bitmap accordingly, returns -1 if operation not possible
 int DiskDriver_freeBlock(DiskDriver* disk, int block_num) {
 	BitMap* bmap= disk->bitmap;
 	int i;
@@ -116,16 +112,20 @@ int DiskDriver_freeBlock(DiskDriver* disk, int block_num) {
 
 }
 
-// returns the first free blockin the disk from position (checking the bitmap)
+// returns the first free block in the disk from position (checking the bitmap)
 int DiskDriver_getFreeBlock(DiskDriver* disk, int start) {
-	int num = disk->header->num_blocks, i, j;
-	for(i = 0; i < num * BLOCK_SIZE; i = i + BLOCK_SIZE) { // TODO: Fare in modo che il ciclo inizi da "start * BLOCK_SIZE"
-		for(j = 0; j <= BLOCK_SIZE; j++){
-			if(j == BLOCK_SIZE){
-				return i / BLOCK_SIZE;
+	int i, j;
+	printf("\n    Devo controllare %d blocchi", disk->header->num_blocks);
+	for(i = 0; i < disk->header->num_blocks; i++) {
+		printf("\n    i=%d", i);
+		for(j = 0; j <= 8; j++){
+			printf("\n       j=%d", j);
+			if(j == 8){
+				printf(" >>> tutti nulli, restituisco %d", i);
+				return i;
 			}
-			int n = BitMap_get(disk->bitmap, i+j, 0);
-			if(n != i+j) {
+			if(BitMap_get(disk->bitmap, i*8 + j, 0) != i*8 + j) {
+				printf(" >>> non è nullo, vado avanti");
 				break;
 			}
 		}
