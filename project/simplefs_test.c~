@@ -20,7 +20,6 @@ int main(int agc, char** argv) {
 	// printf("DirectoryBlock size %ld\n", sizeof(DirectoryBlock));
 
 	// Test BitMap_create
-	printf("\n+++ Test BitMap_create()");
 	DiskDriver disk;
 	char* filename = "test.txt";
 	int num_blocks = 100;
@@ -28,57 +27,53 @@ int main(int agc, char** argv) {
 	BitMap bitmap=*(disk.bitmap);
 
 	// Test BitMap_blockToIndex
-	printf("\n+++ Test BitMap_blockToIndex()");
 	int num = 4 * BLOCK_SIZE;
 	BitMapEntryKey block = BitMap_blockToIndex(num);
 	printf("\n\nLa posizione del blocco è %d, ovvero entry %d con sfasamento %d", num, block.entry_num, block.bit_num);
 
 	// Test BitMap_indexToBlock
-	printf("\n+++ Test BitMap_indexToBlock()");
 	int posizione = BitMap_indexToBlock(block);
 	printf("\n\nAbbiamo la entry %d e lo sfasamento %d, ovvero la posizione %d", block.entry_num, block.bit_num, posizione);
 
-	// Test BitMap_set
-	printf("\n+++ Test BitMap_set()");
-	BitMap* bimap = (BitMap*)malloc(sizeof(BitMap));
-  bimap ->num_bits = 32;
-  bimap ->entries = (char*)malloc(sizeof(char) * 4);
-  bimap ->entries[0] = 'c';
-  bimap ->entries[1] = 'i';
-  bimap ->entries[2] = 'a';
-  bimap ->entries[3] = 'o';
-	char a;
-  int res;
-  int i;
-	printf("\n");
-	for(i=0; i<= (bimap ->num_bits)/8; i++){
-		printf("%c",bimap ->entries[i]);
-	}
+		// Test BitMap_set
+		BitMap* bimap = (BitMap*)malloc(sizeof(BitMap));
+    bimap ->num_bits = 32;
+    bimap ->entries = (char*)malloc(sizeof(char) * 4);
+    bimap ->entries[0] = 'c';
+    bimap ->entries[1] = 'i';
+    bimap ->entries[2] = 'a';
+    bimap ->entries[3] = 'o';
+		char a;
+    int res;
+    int i;
+		printf("\n");
+		for(i=0; i<= (bimap ->num_bits)/8; i++){
+			printf("%c",bimap ->entries[i]);
+		}
 
-  a = bimap ->entries[2];
-	printf("\n%c\n",a);
-  printf("%d come entry, setto a 1 il primo bit\n");
-  for (i = 7; i >= 0; i--) {
-      printf("%d", !!((a >> i) & 0x01));
-  }
-  printf("\n");
+    a = bimap ->entries[2];
+		printf("\n%c\n",a);
+    printf("%d come entry, setto a 1 il primo bit\n");
+    for (i = 7; i >= 0; i--) {
+        printf("%d", !!((a >> i) & 0x01));
+    }
+    printf("\n");
 
-  res = BitMap_set(bimap, 17, 1);
-  printf("res: %d\n", res);
+    res = BitMap_set(bimap, 17, 1);
+    printf("res: %d\n", res);
 
-  a = bimap ->entries[2];
-	printf("%c\n",a);
-  for (i = 7; i >= 0; i--) {
-      printf("%d", !!((a >> i) & 0x01));
-  }
-	for(i=0; i<= (bimap ->num_bits)/8; i++){
-		printf("%c",bimap ->entries[i]);
-	}
-  printf("\n\n");
+    a = bimap ->entries[2];
+		printf("%c\n",a);
+    for (i = 7; i >= 0; i--) {
+        printf("%d", !!((a >> i) & 0x01));
+    }
+		for(i=0; i<= (bimap ->num_bits)/8; i++){
+			printf("%c",bimap ->entries[i]);
+		}
+    printf("\n\n");
 
 
 	// Test BitMap_get
-	printf("\n+++ Test BitMap_get()");
 	for(i=0; i<= (bimap ->num_bits)/8; i++){
 		printf("%c",bimap ->entries[i]);
 	}
@@ -98,24 +93,20 @@ int main(int agc, char** argv) {
 
 
 	// Test DiskDriver_writeBlock
-	printf("\n+++ Test DiskDriver_writeBlock()");
 	int block_num=0;
 	void* src="hello geek";
 	printf("Il risultato della write con block_num=%d è: %d\n", block_num, DiskDriver_writeBlock(&disk,src,block_num));
 
 
 	// Test DiskDriver_readBlock
-	printf("\n+++ Test DiskDriver_readBlock()");
 	void* dest;
 	printf("Il risultato della read con block_num=%d è: %d\n", block_num, DiskDriver_readBlock(&disk,dest,block_num));
 
 
 	// Test DiskDriver_freeBlock
-	printf("\n+++ Test DiskDriver_freeBlock()");
 	//printf("\n Il risultato della FreeBlock è: %d \n",DiskDriver_freeBlock(&disk,0));
 
 
 	// Test DiskDriver_getFreeBlock
-	printf("\n+++ Test DiskDriver_getFreeBlock()");
 	printf("\n Il risultato della getFreeBlock è: %d \n",DiskDriver_getFreeBlock(&disk,0));
 }

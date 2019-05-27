@@ -2,9 +2,11 @@ CCOPTS= -Wall -g -std=gnu99 -Wstrict-prototypes
 LIBS= 
 CC=gcc
 AR=ar
+
+
 BINS= simplefs_test
 
-OBJS = #add here your object files
+OBJS = bitmap.c disk_driver.c simplefs.c #add here your object files
 
 HEADERS=bitmap.h\
 	disk_driver.h\
