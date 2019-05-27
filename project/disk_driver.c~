@@ -36,13 +36,27 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 		}
 		disk->fd = file;
 	}else{ // se il file è stato appena creato
+<<<<<<< HEAD
+=======
+
+		// Apriamo il file ricevuto come parametro, se non esiste, lo creiamo
+>>>>>>> cde7ccb63cfecca01cef74be19321d746ffc3c86
 		file = open(filename, O_CREAT | O_RDWR, 0666);
 		if(!file) {
 			printf("C'è stato un errore nell'apertura del file. Il programma è stato bloccato.");
 			return;
 		}
 		disk->fd=file;
+<<<<<<< HEAD
 		write(file, "\0", 1); // inizializzo il file per evitare "bus error"
+=======
+
+		// Inizializzo il file per evitare "bus error"
+
+		write(file, "Ciao mondoh", 11);
+		//posix_fallocate(file, 0, bitmap_entries);
+		
+>>>>>>> cde7ccb63cfecca01cef74be19321d746ffc3c86
 	}
 
 	// Mi calcolo le dimensioni del file aperto
@@ -60,6 +74,7 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 	disk->bitmap = bmap;
 
 	// Creiamo un DiskHeader che andrà inserito nel DiskDriver
+<<<<<<< HEAD
 	disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries, PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
 	disk->header->num_blocks = num_blocks;
 	disk->header->bitmap_blocks = num_blocks;
@@ -68,6 +83,16 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 	disk->header->first_free_block = DiskDriver_getFreeBlock(disk, 0);
 
 	return;
+=======
+	DiskHeader* header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries, PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
+	header->num_blocks = num_blocks;
+	header->bitmap_blocks = num_blocks;
+	header->bitmap_entries = bitmap_entries;
+	header->free_blocks = num_blocks; 
+	header->first_free_block = DiskDriver_getFreeBlock(disk, 0);
+	disk->header = header;
+
+>>>>>>> cde7ccb63cfecca01cef74be19321d746ffc3c86
 }
 
 
@@ -75,6 +100,7 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 // returns -1 if the block is free accrding to the bitmap
 // 0 otherwise
 int DiskDriver_readBlock(DiskDriver* disk, void* dest, int block_num){
+
 	//lseek is a system call that is used to change the location of the read/write pointer of a file descriptor
 	off_t start=lseek(disk->fd,block_num,SEEK_SET); //block_num è the offset of the pointer (measured in bytes).
 	if(start==-1) return -1;

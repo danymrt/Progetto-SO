@@ -16,13 +16,18 @@ int main(int agc, char** argv) {
 	// printf("FirstDirectoryBlock size %ld\n", sizeof(FirstDirectoryBlock));
 	// printf("DirectoryBlock size %ld\n", sizeof(DirectoryBlock));
 
+<<<<<<< HEAD
 	// Test BitMap_create 
 	printf("\n++++ Test DiskDriver_init() e, all'interno, BitMap_init()");
+=======
+	// Test BitMap_create
+	printf("\n+++ Test DiskDriver_init() e, all'interno, BitMap_init()");
+>>>>>>> cde7ccb63cfecca01cef74be19321d746ffc3c86
 	DiskDriver disk;
 	DiskDriver_init(&disk, "test.txt", 100);
 	BitMap bitmap=*(disk.bitmap);
 	printf("\n    BitMap creata e inizializzata correttamente");
-	printf("\n    Primo blocco libero => %d", disk.header->first_free_block);
+	printf("\n    Primo blocco libero => %d", disk.header->first_free_block); // WORKING: correggere il risultato messo qui dentro dalla DiskDriver_getFreeBlock()
 
 	// Test BitMap_blockToIndex
 	int num = 4 * BLOCK_SIZE;
