@@ -16,21 +16,20 @@ int main(int agc, char** argv) {
 	// printf("FirstDirectoryBlock size %ld\n", sizeof(FirstDirectoryBlock));
 	// printf("DirectoryBlock size %ld\n", sizeof(DirectoryBlock));
 
-	// Test BitMap_create
-	printf("\n+++++++ Test DiskDriver_init() e, all'interno, BitMap_init()");
+	// Test BitMap_create 
+	printf("\n++++ Test DiskDriver_init() e, all'interno, BitMap_init()");
 	DiskDriver disk;
-	char* filename = "test.txt";
-	int num_blocks = 88;
-	DiskDriver_init(&disk, filename, num_blocks);
+	DiskDriver_init(&disk, "test.txt", 100);
 	BitMap bitmap=*(disk.bitmap);
 	printf("\n    BitMap creata e inizializzata correttamente");
+	printf("\n    Primo blocco libero => %d", disk.header->first_free_block);
 
 	// Test BitMap_blockToIndex
 	int num = 4 * BLOCK_SIZE;
 	printf("\n\n+++ Test BitMap_blockToIndex(%d)", num);
 	BitMapEntryKey block = BitMap_blockToIndex(num);
 	printf("\n    La posizione del blocco è %d, ovvero entry %d con sfasamento %d", num, block.entry_num, block.bit_num);
-
+ 
 	// Test BitMap_indexToBlock
 	printf("\n\n+++ Test BitMap_indexToBlock(block)");
 	int posizione = BitMap_indexToBlock(block);
@@ -48,14 +47,14 @@ int main(int agc, char** argv) {
 	char a;
   int res;
   int i;
-	printf("\n");
+	printf("\n"); 
 	for(i=0; i<= (bimap ->num_bits)/8; i++){
 		printf("%c",bimap ->entries[i]);
 	}
 
   a = bimap ->entries[2];
 	printf("\n%c\n",a);
-  //printf("%d come entry, setto a 1 il primo bit\n");
+  //printf("%d come entry, setto a 1 il primo bit\n"); 
   for (i = 7; i >= 0; i--) {
       printf("%d", !!((a >> i) & 0x01));
   }
@@ -80,13 +79,13 @@ int main(int agc, char** argv) {
 	printf("\n    bimap->entries contiene: ");
 	for(i = 0; i <= ( bimap->num_bits ) / 8; i++){
 		printf("%c", bimap->entries[i]);
-	}
+	} 
 	printf("\n    bimap->entries contiene, in binario: "); // TODO: Modificare la stampa in binario
 	printf("\n");
 	int start = 6;
-	int status = 0;
+	int status = 0; 
 	printf("    Partiamo dalla posizione %d e cerchiamo %d => %d\n", start, status, BitMap_get(bimap, start, status));
-	start = 3;
+	start = 3;   
 	status = 1;
 	printf("    Partiamo dalla posizione %d e cerchiamo %d => %d\n", start, status, BitMap_get(bimap, start, status));
 	start = 12;

@@ -16,48 +16,35 @@
 void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 
 	// Calcoliamo quanti blocchi dovremo memorizzare nel disco
-	int bitmap_entries;
 	// Se il numero dei blocchi è multiplo di 8, impostiamo num_blocks/8, altrimenti aggiungiamo 1 (per arrotondare per eccesso)
+	int bitmap_entries;
 	if(num_blocks % 8 == 0) {
 		bitmap_entries = num_blocks / 8; //TODO
 	}else{
 		bitmap_entries = (num_blocks / 8) + 1;
 	}
 
+	// Variabile in cui memorizzare il file descriptor che ci aiuterà ad utilizzare il file stesso
 	int file;
-/*
+
 	// Se il file esiste, calcoliamo alcuni dati, se non esiste, lo creiamo e inseriamo "Ciao mondo"
 	if(!access(filename, F_OK)) { // se il file esiste
-
-		// Apriamo il file ricevuto come parametro, se non esiste, lo creiamo
 		file = open(filename, O_RDWR, 0666);
-
-		// Se il file non esiste o non viene aperto, blocchiamo la funzione, altrimenti memorizziamo il file descriptor del file stesso
 		if(!file) {
 			printf("C'è stato un errore nell'apertura del file. Il programma è stato bloccato.");
 			return;
 		}
-		disk->fd=file;
-	
+		disk->fd = file;
 	}else{ // se il file è stato appena creato
-*/
-		// Apriamo il file ricevuto come parametro, se non esiste, lo creiamo
 		file = open(filename, O_CREAT | O_RDWR, 0666);
-
-		// Se il file non esiste o non viene aperto, blocchiamo la funzione, altrimenti memorizziamo il file descriptor del file stesso
 		if(!file) {
 			printf("C'è stato un errore nell'apertura del file. Il programma è stato bloccato.");
 			return;
 		}
 		disk->fd=file;
-
-		// Inizializzo il file per evitare "bus error"
-
-		write(file, "Ciao mondoh", 11);
-		//posix_fallocate(file, 0, bitmap_entries);
-		/*
+		write(file, "\0", 1); // inizializzo il file per evitare "bus error"
 	}
-*/
+
 	// Mi calcolo le dimensioni del file aperto
 	struct stat file_stat;
 	fstat(file, &file_stat);
@@ -67,31 +54,26 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 	void * buffer = malloc(file_size + 1);
 	read(file, buffer, file_size);
 
-	// Creo una BitMap
+	// Creo una BitMap e memorizzo le informazioni e il contenuto del file aperto
 	BitMap* bmap = (BitMap*) malloc(sizeof(BitMap));
-	// Memorizzo nella BitMap le dimensioni ed il contenuto del file aperto
 	BitMap_init(bmap, file_size * 8, buffer);
 	disk->bitmap = bmap;
 
 	// Creiamo un DiskHeader che andrà inserito nel DiskDriver
-	DiskHeader* header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries, PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
-/*	header->num_blocks = num_blocks;
-	header->bitmap_blocks = num_blocks;
-	header->bitmap_entries = bitmap_entries;
-	header->free_blocks = num_blocks; 
-	header->first_free_block = DiskDriver_getFreeBlock(disk, 0);
-	disk->header = header;
+	disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries, PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
+	disk->header->num_blocks = num_blocks;
+	disk->header->bitmap_blocks = num_blocks;
+	disk->header->bitmap_entries = bitmap_entries;
+	disk->header->free_blocks = num_blocks; 
+	disk->header->first_free_block = DiskDriver_getFreeBlock(disk, 0);
 
-	printf("\n    Bla bla bla %d", header->first_free_block);
-*/
+	return;
 }
 
 
 // reads the block in position block_num
 // returns -1 if the block is free accrding to the bitmap
 // 0 otherwise
-
-//sia off_set che ssize_t sono long ovvero 8 byte
 int DiskDriver_readBlock(DiskDriver* disk, void* dest, int block_num){
 	//lseek is a system call that is used to change the location of the read/write pointer of a file descriptor
 	off_t start=lseek(disk->fd,block_num,SEEK_SET); //block_num è the offset of the pointer (measured in bytes).
@@ -135,15 +117,13 @@ int DiskDriver_freeBlock(DiskDriver* disk, int block_num) {
 
 // returns the first free blockin the disk from position (checking the bitmap)
 int DiskDriver_getFreeBlock(DiskDriver* disk, int start) {
-	BitMap* bmap = disk->bitmap;
-	int num = disk->header->num_blocks;
-	int i, j;
-	for(i = start * BLOCK_SIZE; i < num * BLOCK_SIZE; i = i + BLOCK_SIZE){
+	int num = disk->header->num_blocks, i, j;
+	for(i = 0; i < num * BLOCK_SIZE; i = i + BLOCK_SIZE) { // TODO: Fare in modo che il ciclo inizi da "start * BLOCK_SIZE"
 		for(j = 0; j <= BLOCK_SIZE; j++){
 			if(j == BLOCK_SIZE){
-				return i/BLOCK_SIZE;
+				return i / BLOCK_SIZE;
 			}
-			int n = BitMap_get(bmap, i+j, 0);
+			int n = BitMap_get(disk->bitmap, i+j, 0);
 			if(n != i+j) {
 				break;
 			}
