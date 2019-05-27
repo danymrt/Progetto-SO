@@ -1,44 +1,90 @@
-#include "simplefs.h"
+#define _GNU_SOURCE
 #include "disk_driver.h"
-#include "bitmap.h"
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 // Apre il file (creandolo, se necessario), allocando lo spazio necessario sul disco e calcolando quanto deve essere grane la mappa se il file è stato appena creato.
 // Compila un Disk Header e riempie la Bitmap della dimensione appropriata con tutti 0 (per denotare lo spazio libero)
 // opens the file (creating it if necessary) allocates the necessary space on the disk calculates how big the bitmap should be
 // If the file was new compiles a disk header, and fills in the bitmap of appropriate size with all 0 (to denote the free space)
 void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
-	// Apriamo il file ricevuto come parametro
-	int file = open(filename, O_CREAT | O_RDWR, 0666);
-	// Se il file non esiste o non viene aperto, blocchiamo la funzione
-	if(!file) return;
-	disk->fd=file;
 
-	// Creiamo un DiskHeader che andrà inserito nel DiskDriver
-	DiskHeader header;
-	// Impostiamo il numero dei blocchi all'interno del DiskHeader
-	header.num_blocks = num_blocks;
+	// Calcoliamo quanti blocchi dovremo memorizzare nel disco
+	int bitmap_entries;
 	// Se il numero dei blocchi è multiplo di 8, impostiamo num_blocks/8, altrimenti aggiungiamo 1 (per arrotondare per eccesso)
 	if(num_blocks % 8 == 0) {
-		header.bitmap_blocks = num_blocks / 8; //TODO
+		bitmap_entries = num_blocks / 8; //TODO
 	}else{
-		header.bitmap_blocks = (num_blocks / 8) + 1;
+		bitmap_entries = (num_blocks / 8) + 1;
 	}
-	//
-	header.bitmap_entries = ((disk->bitmap->num_bits)/8)+1;
 
-	header.free_blocks = 0; //TODO
-	header.first_free_block = 0; //TODO
-	disk->header = &header;
-	BitMap bmap;
-	BitMap_init(&bmap,720,"000000000000000000000000000000000000000000000000000000000000000000000000000000");
-	disk->bitmap = &bmap;
+	int file;
+/*
+	// Se il file esiste, calcoliamo alcuni dati, se non esiste, lo creiamo e inseriamo "Ciao mondo"
+	if(!access(filename, F_OK)) { // se il file esiste
 
+		// Apriamo il file ricevuto come parametro, se non esiste, lo creiamo
+		file = open(filename, O_RDWR, 0666);
+
+		// Se il file non esiste o non viene aperto, blocchiamo la funzione, altrimenti memorizziamo il file descriptor del file stesso
+		if(!file) {
+			printf("C'è stato un errore nell'apertura del file. Il programma è stato bloccato.");
+			return;
+		}
+		disk->fd=file;
+	
+	}else{ // se il file è stato appena creato
+*/
+		// Apriamo il file ricevuto come parametro, se non esiste, lo creiamo
+		file = open(filename, O_CREAT | O_RDWR, 0666);
+
+		// Se il file non esiste o non viene aperto, blocchiamo la funzione, altrimenti memorizziamo il file descriptor del file stesso
+		if(!file) {
+			printf("C'è stato un errore nell'apertura del file. Il programma è stato bloccato.");
+			return;
+		}
+		disk->fd=file;
+
+		// Inizializzo il file per evitare "bus error"
+
+		write(file, "Ciao mondoh", 11);
+		//posix_fallocate(file, 0, bitmap_entries);
+		/*
+	}
+*/
+	// Mi calcolo le dimensioni del file aperto
+	struct stat file_stat;
+	fstat(file, &file_stat);
+	int file_size = file_stat.st_size;
+
+	// Ottengo il contenuto del file
+	void * buffer = malloc(file_size + 1);
+	read(file, buffer, file_size);
+
+	// Creo una BitMap
+	BitMap* bmap = (BitMap*) malloc(sizeof(BitMap));
+	// Memorizzo nella BitMap le dimensioni ed il contenuto del file aperto
+	BitMap_init(bmap, file_size * 8, buffer);
+	disk->bitmap = bmap;
+
+	// Creiamo un DiskHeader che andrà inserito nel DiskDriver
+	DiskHeader* header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries, PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
+	// WORKING - Dopo questa riga, il file appena creato viene modificato, come se la mmap scrivesse sullo stesso spazio di memoria
+/*	header->num_blocks = num_blocks;
+	header->bitmap_blocks = num_blocks;
+	header->bitmap_entries = bitmap_entries;
+	header->free_blocks = num_blocks; 
+	header->first_free_block = DiskDriver_getFreeBlock(disk, 0);
+	disk->header = header;
+
+	printf("\n    Bla bla bla %d", header->first_free_block);
+*/
 }
 
 
@@ -90,22 +136,20 @@ int DiskDriver_freeBlock(DiskDriver* disk, int block_num) {
 
 // returns the first free blockin the disk from position (checking the bitmap)
 int DiskDriver_getFreeBlock(DiskDriver* disk, int start) {
-	BitMap* bmap= disk->bitmap;
-	int num=disk->header->num_blocks;
-	int i,j;
-	int indice= start*BLOCK_SIZE;
-	for(i=0; i< num * BLOCK_SIZE; i=i+BLOCK_SIZE){
-		for(j=0; j<=BLOCK_SIZE; j++){
-			if(j==BLOCK_SIZE){
-				return i;
+	BitMap* bmap = disk->bitmap;
+	int num = disk->header->num_blocks;
+	int i, j;
+	for(i = start * BLOCK_SIZE; i < num * BLOCK_SIZE; i = i + BLOCK_SIZE){
+		for(j = 0; j <= BLOCK_SIZE; j++){
+			if(j == BLOCK_SIZE){
+				return i/BLOCK_SIZE;
 			}
-			int n=BitMap_get(bmap,j+i,0);
-			if(n!=j+i){
+			int n = BitMap_get(bmap, i+j, 0);
+			if(n != i+j) {
 				break;
 			}
 		}
 	}
-	printf("\n i=%d j= %d \n",i,j);
 }
 
 // writes the data (flushing the mmaps)

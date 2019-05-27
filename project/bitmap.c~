@@ -1,6 +1,19 @@
-#include "simplefs.h"
-#include "disk_driver.h"
-#include "bitmap.h"
+#include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+typedef struct{
+	int num_bits;
+	uint8_t* entries;
+}  BitMap;
+
+typedef struct {
+	int entry_num;
+	char bit_num;
+} BitMapEntryKey;
 
 // Funzione che restituisce una BitMap contenente i valori passati come argomenti
 void BitMap_init(BitMap* bitmap, int num_bits, uint8_t* entries){

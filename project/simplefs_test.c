@@ -1,9 +1,6 @@
-#include "simplefs.h"
-#include "simplefs.c"
-#include "disk_driver.h"
-#include "disk_driver.c"
-#include "bitmap.h"
 #include "bitmap.c"
+#include "disk_driver.c"
+#include "simplefs.c"
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -20,10 +17,10 @@ int main(int agc, char** argv) {
 	// printf("DirectoryBlock size %ld\n", sizeof(DirectoryBlock));
 
 	// Test BitMap_create
-	printf("\n+++ Test DiskDriver_init() e, all'interno, BitMap_init()");
+	printf("\n+++++ Test DiskDriver_init() e, all'interno, BitMap_init()");
 	DiskDriver disk;
 	char* filename = "test.txt";
-	int num_blocks = 100;
+	int num_blocks = 88;
 	DiskDriver_init(&disk, filename, num_blocks);
 	BitMap bitmap=*(disk.bitmap);
 	printf("\n    BitMap creata e inizializzata correttamente");
@@ -58,7 +55,7 @@ int main(int agc, char** argv) {
 
   a = bimap ->entries[2];
 	printf("\n%c\n",a);
-  printf("%d come entry, setto a 1 il primo bit\n");
+  //printf("%d come entry, setto a 1 il primo bit\n");
   for (i = 7; i >= 0; i--) {
       printf("%d", !!((a >> i) & 0x01));
   }

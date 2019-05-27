@@ -1,5 +1,3 @@
-#include "simplefs.h"
-#include "disk_driver.h"
 #include "bitmap.h"
 #include <stdio.h>
 #include <string.h>
