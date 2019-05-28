@@ -31,10 +31,9 @@ int main(int agc, char** argv) {
 
 	// Test BitMap_set
 	printf("\n\n+++ Test BitMap_set()");
-	printf("\n    La bitmap contiene: %s", disk.bitmap->entries);
-	printf("\n    Eseguo BitMap_set(bitmap, 17, 1)...");
+	printf("\n    Prima  =>   %s", disk.bitmap->entries);
 	BitMap_set(disk.bitmap, 17, 1);
-	printf("\n    La bitmap contiene: %s", disk.bitmap->entries);
+	printf("\n    Dopo   =>   %s", disk.bitmap->entries);
 
 
 	// Test BitMap_get

@@ -42,7 +42,11 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 			return;
 		}
 		disk->fd=file;
-		write(file, "Ciao mondo", 10); // inizializzo il file per evitare "bus error"
+
+		// inizializzo il file per evitare "bus error"
+		char * init = "\0";
+		write(file, init, strlen(init)); 
+		lseek(file, 0, SEEK_SET);
 	}
 
 	// Mi calcolo le dimensioni del file aperto
@@ -51,16 +55,23 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 	int file_size = file_stat.st_size;
 
 	// Ottengo il contenuto del file
-	void * buffer = malloc(file_size + 1);
-	read(file, buffer, file_size);
+	char * file_content = malloc(file_size);
+	read(file, file_content, file_size);
 
 	// Creo una BitMap e memorizzo le informazioni e il contenuto del file aperto
-	BitMap* bmap = (BitMap*) malloc(sizeof(BitMap));
-	BitMap_init(bmap, file_size * 8, buffer);
-	disk->bitmap = bmap;
+	disk->bitmap = (BitMap*) malloc(sizeof(BitMap));
+	//BitMap_init(disk->bitmap, file_size * 8, file_content);
+	disk->bitmap->num_bits = num_blocks * BLOCK_SIZE;
+	disk->bitmap->entries = malloc(disk->bitmap->num_bits);
+	int i;
+	for(i = 0; i < disk->bitmap->num_bits; i++) {
+		BitMap_set(disk->bitmap, i, 0);
+	}
+	disk->bitmap->entries = file_content;
 
 	// Creiamo un DiskHeader che andrà inserito nel DiskDriver
-	disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries, PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
+	//disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries, PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
+	disk->header = (DiskHeader*) malloc(sizeof(DiskHeader));
 	disk->header->num_blocks = num_blocks;	// WORKING: Da questa riga in poi, il file viene sovrascritto, correggere.
 	disk->header->bitmap_blocks = num_blocks;
 	disk->header->bitmap_entries = bitmap_entries;

@@ -10,8 +10,11 @@
 void BitMap_init(BitMap* bitmap, int num_bits, uint8_t* entries){
 	// Assegno il valore preso come argomento a num_bits
 	bitmap->num_bits = num_bits;
-	// Assegno il valore preso come argomento a entries
-	bitmap->entries = (entries);
+	bitmap->entries = malloc(num_bits/8+1);
+	int i;
+	for(i = 0; i < num_bits; i++) {
+		BitMap_set(bitmap, i, 0);
+	}
 }
 
 // Prendiamo in ingresso il parametro "num" che rappresenta la posizione di un blocco nella memoria, lo convertiamo in due valori che rappresentano rispettivamente l'indice dell'entry e lo spiazzamento all'interno di essa
@@ -33,13 +36,13 @@ int BitMap_indexToBlock(BitMapEntryKey entry) {
 
 // Imposta il bit all'indice "pos" in bmap a "status"
 // Sets the bit at index pos in bmap to status
- int BitMap_set(BitMap* bmap, int pos, int status) {
+ int BitMap_set(BitMap* bitmap, int pos, int status) {
     BitMapEntryKey bmek = BitMap_blockToIndex(pos);
-		uint8_t mask= 1 << bmek.bit_num;
+		uint8_t mask = 1 << bmek.bit_num;
 		if(status){
-			bmap->entries[bmek.entry_num] |= mask;
+			bitmap->entries[bmek.entry_num] |= mask;
 		}else{
-    	bmap->entries[bmek.entry_num] &= ~(mask);
+    	bitmap->entries[bmek.entry_num] &= ~(mask);
     }
 
     return status;
