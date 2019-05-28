@@ -18,10 +18,10 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 	// Calcoliamo quanti blocchi dovremo memorizzare nel disco
 	// Se il numero dei blocchi è multiplo di 8, impostiamo num_blocks/8, altrimenti aggiungiamo 1 (per arrotondare per eccesso)
 	int bitmap_entries;
-	if(num_blocks % 8 == 0) {
-		bitmap_entries = num_blocks / 8; //TODO
+	if((num_blocks*BLOCK_SIZE) % 8 == 0) {
+		bitmap_entries = (num_blocks*BLOCK_SIZE) / 8; 
 	}else{
-		bitmap_entries = (num_blocks / 8) + 1;
+		bitmap_entries = ((num_blocks*BLOCK_SIZE) / 8) + 1;
 	}
 
 	// Variabile in cui memorizzare il file descriptor che ci aiuterà ad utilizzare il file stesso
@@ -45,6 +45,7 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 
 		// inizializzo il file per evitare "bus error"
 		char * init = "\0";
+		printf("\nLunghezza=%d\n",strlen(init));//togliere
 		write(file, init, strlen(init)); 
 		lseek(file, 0, SEEK_SET);
 	}
@@ -60,7 +61,6 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 
 	// Creo una BitMap e memorizzo le informazioni e il contenuto del file aperto
 	disk->bitmap = (BitMap*) malloc(sizeof(BitMap));
-	//BitMap_init(disk->bitmap, file_size * 8, file_content);
 	disk->bitmap->num_bits = num_blocks * BLOCK_SIZE;
 	disk->bitmap->entries = malloc(disk->bitmap->num_bits);
 	int i;
@@ -123,20 +123,17 @@ int DiskDriver_freeBlock(DiskDriver* disk, int block_num) {
 
 }
 
+//working
 // returns the first free block in the disk from position (checking the bitmap)
 int DiskDriver_getFreeBlock(DiskDriver* disk, int start) {
 	int i, j;
-	printf("\n    Devo controllare %d blocchi", disk->header->num_blocks);
+	printf("\nDimensione=%d\n",strlen(disk->bitmap->entries)*8);
 	for(i = 0; i < disk->header->num_blocks; i++) {
-		printf("\n    i=%d", i);
-		for(j = 0; j <= 8; j++){
-			printf("\n       j=%d", j);
-			if(j == 8){
-				printf(" >>> tutti nulli, restituisco %d", i);
+		for(j = 0; j <= BLOCK_SIZE; j++){
+			if(j == BLOCK_SIZE){
 				return i;
 			}
-			if(BitMap_get(disk->bitmap, i*8 + j, 0) != i*8 + j) {
-				printf(" >>> non è nullo, vado avanti");
+			if(BitMap_get(disk->bitmap, i*BLOCK_SIZE + j, 0) != i*BLOCK_SIZE + j) {
 				break;
 			}
 		}

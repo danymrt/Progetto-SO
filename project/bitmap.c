@@ -6,16 +6,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-// Funzione che restituisce una BitMap contenente i valori passati come argomenti
-void BitMap_init(BitMap* bitmap, int num_bits, uint8_t* entries){
-	// Assegno il valore preso come argomento a num_bits
-	bitmap->num_bits = num_bits;
-	bitmap->entries = malloc(num_bits/8+1);
-	int i;
-	for(i = 0; i < num_bits; i++) {
-		BitMap_set(bitmap, i, 0);
-	}
-}
 
 // Prendiamo in ingresso il parametro "num" che rappresenta la posizione di un blocco nella memoria, lo convertiamo in due valori che rappresentano rispettivamente l'indice dell'entry e lo spiazzamento all'interno di essa
 // Converts a linear index to an index in the array, and a char that indicates the offset of the bit inside the array
