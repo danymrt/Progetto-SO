@@ -3,10 +3,10 @@
 #include "simplefs.c"
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
+#include <sys/stat.h> 
 #include <fcntl.h> 
 #include <unistd.h>
-#include <stdlib.h>
+#include <stdlib.h>     
 
 int main(int agc, char** argv) {
 
@@ -32,14 +32,15 @@ int main(int agc, char** argv) {
 	// Test BitMap_set
 	printf("\n\n+++ Test BitMap_set()");
 	printf("\n    Prima  =>   %s", disk.bitmap->entries);  
-	BitMap_set(disk.bitmap, 17, 1);  
+	BitMap_set(disk.bitmap, 17, 1);   
 	printf("\n    Dopo   =>   %s", disk.bitmap->entries);
 
  
 	// Test BitMap_get
 	printf("\n\n+++ Test BitMap_get()"); 
 	printf("\n    bitmap->entries contiene: %s", disk.bitmap->entries);
-	printf("\n    bitmap->entries contiene, in binario: "); // TODO: Stampare la disk.bitmap->entries in binario
+	printf("\n    bitmap->entries contiene, in binario: "); 
+	// TODO: Stampare la disk.bitmap->entries in binario
 	int start = 6, status = 0; 
 	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(disk.bitmap, start, status));
 	start = 3, status = 1; 
@@ -62,16 +63,17 @@ int main(int agc, char** argv) {
 	void* dest;
 	printf("\n    Il risultato della read con block_num=%d è: %d\n", block_num, DiskDriver_readBlock(&disk,dest,block_num));
  
-
+	//TODO stampa bene con i spazi?|
 	// Test DiskDriver_freeBlock
 	printf("\n+++ Test DiskDriver_freeBlock()");
-	printf("\n Il risultato della FreeBlock è: %d \n",DiskDriver_freeBlock(&disk,0));
+	printf("\n 		Libero il blocco %d, la funzione ritorna: %d \n",1,DiskDriver_freeBlock(&disk,0));
+	printf("\n    bitmap->entries contiene: %s", disk.bitmap->entries);
 
 
-	// Test DiskDriver_getFreeBlock
+	// Test DiskDriver_getFreeBlock  
 	printf("\n+++ Test DiskDriver_getFreeBlock()");
-	printf("\n    Il risultato della getFreeBlock è: %d \n",DiskDriver_getFreeBlock(&disk,0));
-	*/
+	printf("\n    Il primo blocco libero nella posizione %d è %d \n",1,DiskDriver_getFreeBlock(&disk,1));
+*/
 
 	printf("\n\n");
 }

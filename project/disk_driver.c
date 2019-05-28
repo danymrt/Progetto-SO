@@ -64,10 +64,12 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 	disk->bitmap->entries = malloc(disk->bitmap->num_bits);
 	int i,n;
 	
-	BitMap_init(disk->bitmap);
-	//for(i = 0; i < disk->bitmap->num_bits; i++) {
-		//BitMap_set(disk->bitmap, i, 0);
-	//}
+	// Imposto tutti i bit della BitMap a zero
+	for(i=0;i<=disk->bitmap->num_bits/8; i++) {
+		disk->bitmap->entries[i] &= !disk->bitmap->entries[i];
+	}
+	
+	// Sovrascrivo i dati del file nella BitMap
 	for(i=0; i<file_size;i++){
 		disk->bitmap->entries[i] = file_content[i];
 	}
@@ -75,7 +77,7 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 	// Creiamo un DiskHeader che andrà inserito nel DiskDriver
 	//disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries, PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
 	disk->header = (DiskHeader*) malloc(sizeof(DiskHeader));
-	disk->header->num_blocks = num_blocks;	// WORKING: Da questa riga in poi, il file viene sovrascritto, correggere.
+	disk->header->num_blocks = num_blocks;	// WORKING: Da questa riga in poi, il file viene sovrascritto, correggere. TODO con /0 non funziona
 	disk->header->bitmap_blocks = num_blocks;
 	disk->header->bitmap_entries = bitmap_entries;
 	disk->header->free_blocks = num_blocks; 
@@ -113,6 +115,7 @@ int DiskDriver_writeBlock(DiskDriver* disk, void* src, int block_num) {
 	else return 0;
 }
 
+
 // frees a block in position block_num, and alters the bitmap accordingly, returns -1 if operation not possible
 int DiskDriver_freeBlock(DiskDriver* disk, int block_num) {
 	BitMap* bmap= disk->bitmap;
@@ -122,6 +125,7 @@ int DiskDriver_freeBlock(DiskDriver* disk, int block_num) {
 		int n=BitMap_set(bmap,i,0);
 		if(n<0) return -1;
 	}
+
 	return 0;
 
 }
@@ -130,23 +134,15 @@ int DiskDriver_freeBlock(DiskDriver* disk, int block_num) {
 // returns the first free block in the disk from position (checking the bitmap)
 int DiskDriver_getFreeBlock(DiskDriver* disk, int start) {
 	int i, j, n;
-	//printf("\n    Proviamo = %s\n    ", disk->bitmap->entries);
-	/*for(n = 0; n < strlen(disk->bitmap->entries); n++) {
-		char a = disk->bitmap->entries[n];
-		for (i = 7; i >= 0; i--) {
-        printf("%d", !!((a >> i) & 0x01));
-    }
-	}*/
-	//printf("\n    Dimensione = %d (%d)\n",strlen(disk->bitmap->entries),strlen(disk->bitmap->entries)*8);
-	for(i = 0; i < disk->header->num_blocks; i++) {
-			//printf("\n    i=%d",i);
+	// Controlliamo ogni blocco di Disk e ogni bit della BitMap
+	for(i = start; i < disk->header->num_blocks; i++) {
 		for(j = 0; j <= BLOCK_SIZE; j++){
-			//printf("\n 		    j=%d",i*BLOCK_SIZE + j);
+			// Se arrivo alla fine del blocco e questo è libero ritorno i
 			if(j == BLOCK_SIZE){
 				return i;
 			}
+			// Controllo ogni bit e se questo è 1 esco da questo blocco e passo al successivo
 			if(BitMap_get(disk->bitmap, i*BLOCK_SIZE + j, 0) != i*BLOCK_SIZE + j) {
-				//printf(" >>> break\n");
 				break;
 			}
 		}

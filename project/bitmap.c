@@ -24,12 +24,6 @@ int BitMap_indexToBlock(BitMapEntryKey entry) {
 	return (entry.entry_num*8) + entry.bit_num;
 }
 
-void BitMap_init(BitMap * bitmap) {
-	int i;
-	for(i=0;i<=bitmap->num_bits/8; i++) {
-		bitmap->entries[i] &= !bitmap->entries[i];
-	}
-}
 
 // Imposta il bit all'indice "pos" in bmap a "status"
 // Sets the bit at index pos in bmap to status
@@ -60,7 +54,6 @@ int BitMap_get(BitMap* bmap, int start, int status) {
 		if(i == bmap->num_bits) return -1;
 		BitMapEntryKey bmek = BitMap_blockToIndex(i);
 	 	result = (bmap->entries[bmek.entry_num] & (1 << (7-bmek.bit_num))); //TODO modificarlo
-		//printf(" >>> %c %d",bmap->entries[bmek.entry_num],(1 << (7-bmek.bit_num)));
 		// Se dobbiamo verificare "status=1", il risultato deve essere ">0", altrimenti deve essere "=0"
 		if(status == 1) {
 			if(result > 0) return i;
