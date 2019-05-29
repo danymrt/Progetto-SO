@@ -58,22 +58,6 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 	char * file_content = malloc(file_size);
 	read(file, file_content, file_size);
 
-	// Creo una BitMap e memorizzo le informazioni e il contenuto del file aperto
-	disk->bitmap = (BitMap*) malloc(sizeof(BitMap));
-	disk->bitmap->num_bits = num_blocks * BLOCK_SIZE;
-	disk->bitmap->entries = malloc(disk->bitmap->num_bits);
-	int i,n;
-	
-	// Imposto tutti i bit della BitMap a zero
-	for(i=0;i<=disk->bitmap->num_bits/8; i++) {
-		disk->bitmap->entries[i] &= !disk->bitmap->entries[i];
-	}
-	
-	// Sovrascrivo i dati del file nella BitMap
-	for(i=0; i<file_size;i++){
-		disk->bitmap->entries[i] = file_content[i];
-	}
-	printf("\n");
 	// Creiamo un DiskHeader che andrà inserito nel DiskDriver
 	//disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries, PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
 	disk->header = (DiskHeader*) malloc(sizeof(DiskHeader));
@@ -81,50 +65,81 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 	disk->header->bitmap_blocks = num_blocks;
 	disk->header->bitmap_entries = bitmap_entries;
 	disk->header->free_blocks = num_blocks; 
+
+	// Creo una BitMap e memorizzo le informazioni e il contenuto del file aperto
+	disk->bitmap = (BitMap*) malloc(sizeof(BitMap));
+	disk->bitmap->num_bits = num_blocks * BLOCK_SIZE;
+	disk->bitmap->entries = malloc(disk->bitmap->num_bits);
+	int i,n;
+	
+	// Imposto tutti i bit della BitMap a zero
+	for(i=0; i<=num_blocks; i++) { 
+		DiskDriver_freeBlock(disk,i);
+	}
+	/*
+	for(i=0;i<=disk->bitmap->num_bits/8; i++) {
+		disk->bitmap->entries[i] &= !disk->bitmap->entries[i];
+	}
+	*/
+	// Sovrascrivo i dati del file nella BitMap
+	for(i=0; i<file_size;i++){
+		disk->bitmap->entries[i] = file_content[i];
+	}
+
+	// Calcolo il primo blocco libero dopo aver assegnato il valore alle entries
 	disk->header->first_free_block = DiskDriver_getFreeBlock(disk, 0);
 
 	return;
 }
 
 
-// reads the block in position block_num, returns -1 if the block is free accrding to the bitmap 0 otherwise
+// reads the block in position block_num, returns -1 if the block is free accrding to the bitmap 0 otherwise 
 int DiskDriver_readBlock(DiskDriver* disk, void* dest, int block_num){
+	int n;
+	if(n=DiskDriver_getFreeBlock(disk,block_num)==block_num){
+		printf("\n    Il blocco è libero");
+		return -1;
+	}
 
-	//lseek is a system call that is used to change the location of the read/write pointer of a file descriptor
-	off_t start=lseek(disk->fd,block_num,SEEK_SET); //block_num è the offset of the pointer (measured in bytes).
+	off_t start=lseek(disk->fd,block_num,SEEK_SET);
 	if(start==-1) return -1;
-	//printf("\n start=%ld\n", start);
 
-	int rz= read(disk->fd,dest ,BLOCK_SIZE);
-
+	int i;
+	int rz= read(disk->fd,dest,strlen(disk->bitmap->entries));
 	if(rz!=0) return -1;
 	else return 0;
 }
 
+//TODO: sia sopra che sotto, controllare Block_size
 
 // writes a block in position block_num, and alters the bitmap accordingly, returns -1 if operation not possible
-int DiskDriver_writeBlock(DiskDriver* disk, void* src, int block_num) {
-	//sposto il puntatore nel blocco che voglio io
-	off_t start=lseek(disk->fd,block_num,SEEK_SET);
-	if(start==-1) return -1;
+int DiskDriver_writeBlock(DiskDriver * disk, void * src, int block_num) {
 
-	int sz = write(disk->fd,src,BLOCK_SIZE);
-  if(sz==-1) return -1;
+	// Sposto il puntatore nel blocco che voglio io
+	off_t start = lseek(disk->fd, (block_num * BLOCK_SIZE) / 8, SEEK_SET);
+	if(start == -1) return -1;
 
-	if(sz!=BLOCK_SIZE) return -1;
-	else return 0;
+	int write_count = write(disk->fd, src, strlen(src));
+  if(write_count == -1) return -1;
+
+	return 0;
 }
 
-
+//TODO: controllare che tutto va!
 // frees a block in position block_num, and alters the bitmap accordingly, returns -1 if operation not possible
 int DiskDriver_freeBlock(DiskDriver* disk, int block_num) {
-	BitMap* bmap= disk->bitmap;
-	int i;
-	int indice= block_num*BLOCK_SIZE;
+	if(block_num > disk->header->num_blocks) return -1;
+
+	int n, i, indice= block_num*BLOCK_SIZE;
+
+	//Setto i bit del blocco a 0
 	for(i=indice ; i< indice+BLOCK_SIZE; i++){
-		int n=BitMap_set(bmap,i,0);
-		if(n<0) return -1;
+		BitMap_set(disk->bitmap,i,0);
 	}
+	disk->header->free_blocks++;
+
+	//Nel caso in cui il blocco è precedente a quello salvato in DiskHeader lo cambio
+	if(block_num < disk->header->first_free_block) disk->header->first_free_block=block_num;
 
 	return 0;
 

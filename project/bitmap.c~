@@ -24,12 +24,6 @@ int BitMap_indexToBlock(BitMapEntryKey entry) {
 	return (entry.entry_num*8) + entry.bit_num;
 }
 
-void BitMap_init(BitMap * bitmap) {
-	int i;
-	for(i=0;i<=bitmap->num_bits/8; i++) {
-		bitmap->entries[i] &= !bitmap->entries[i];
-	}
-}
 
 // Imposta il bit all'indice "pos" in bmap a "status"
 // Sets the bit at index pos in bmap to status
