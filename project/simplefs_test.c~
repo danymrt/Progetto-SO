@@ -12,8 +12,8 @@ void stampa_in_binario(char* stringa) {
 	int i, j;
 	for(i = 0; i < strlen(stringa); i++) {
 		char c = stringa[i];
-		for (j = 0; j <= 7; j++) {
-	      printf("%d", !!((c >> j) & 0x01));
+		for (j = 7; j >= 0; j--) {
+	      printf("%d", !!((c >> j) & 0x01)); 
 	  }
 	}
 }
@@ -26,14 +26,16 @@ int main(int agc, char** argv) {
 	printf("\n+++ Test DiskDriver_getFreeBlock()");
 	printf("\n+++ Test BitMap_get()");
 	DiskDriver disk;
-	DiskDriver_init(&disk, "test.txt", 3);
-	BitMap bitmap=*(disk.bitmap); 
+	DiskDriver_init(&disk, "test.txt", 15);
+	BitMap bitmap;
+	bitmap.num_bits = disk.header->bitmap_blocks;
+	bitmap.entries = disk.bitmap_data;
 	printf("\n    BitMap creata e inizializzata correttamente");
 	printf("\n    Primo blocco libero => %d", disk.header->first_free_block); 
 
 
 	// Test BitMap_blockToIndex
-	int num = 4 * BLOCK_SIZE;
+	int num = disk.header->num_blocks;
 	printf("\n\n+++ Test BitMap_blockToIndex(%d)", num);   
 	BitMapEntryKey block = BitMap_blockToIndex(num);
 	printf("\n    La posizione del blocco è %d, ovvero entry %d con sfasamento %d", num, block.entry_num, block.bit_num);
@@ -49,6 +51,8 @@ int main(int agc, char** argv) {
 	printf("\n\n+++ Test DiskDriver_freeBlock()");
 	printf("\n    Libero il blocco %d, la funzione ritorna: %d",0,DiskDriver_freeBlock(&disk,0));
 
+	printf("\n    Prima della write => ");
+	stampa_in_binario(bitmap.entries);
  
 	// Test DiskDriver_writeBlock  
 	printf("\n\n+++ Test DiskDriver_writeBlock()");
@@ -64,26 +68,25 @@ int main(int agc, char** argv) {
 
 	// Test BitMap_set
 	printf("\n\n+++ Test BitMap_set()"); 
-	printf("\n    Prima     =>   %s\n                   ", disk.bitmap->entries);
-	stampa_in_binario(disk.bitmap->entries);
-	BitMap_set(disk.bitmap, 17, 1);
-	printf("\n    Dopo (17) =>   %s\n                   ", disk.bitmap->entries);
-	stampa_in_binario(disk.bitmap->entries);
+	printf("\n    Prima     => ");
+	stampa_in_binario(bitmap.entries);
+	BitMap_set(&bitmap, 10, 1); 
+	printf("\n    Dopo (10) => ");
+	stampa_in_binario(bitmap.entries);
 
   
 	// Test BitMap_get
 	printf("\n\n+++ Test BitMap_get()");  
-	printf("\n    bitmap->entries contiene: %s", disk.bitmap->entries);
-	printf("\n    bitmap->entries contiene, in binario: "); 
-	stampa_in_binario(disk.bitmap->entries);
+	printf("\n    disk->bitmap_data contiene, in binario: "); 
+	stampa_in_binario(bitmap.entries);
 	int start = 6, status = 0;    
-	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(disk.bitmap, start, status));
+	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(&bitmap, start, status));
 	start = 3, status = 1; 
-	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(disk.bitmap, start, status));
+	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(&bitmap, start, status));
 	start = 12, status = 0;
-	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(disk.bitmap, start, status));
+	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(&bitmap, start, status));
 	start = 13, status = 1;
-	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d\n", start, status, BitMap_get(disk.bitmap, start, status));
+	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d\n", start, status, BitMap_get(&bitmap, start, status));
 
 
 	printf("\n\n");
