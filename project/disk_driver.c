@@ -59,17 +59,14 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 	read(file, file_content, file_size);
 
 	// Creiamo un DiskHeader che andrà inserito nel DiskDriver
-	//disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries, PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
-	disk->header = (DiskHeader*) malloc(sizeof(DiskHeader));
-	disk->header->num_blocks = num_blocks;	// TODO: Se utilizzamo mmap, da questa riga in poi, il file viene sovrascritto, correggere. Con /0 non funziona
+	disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries, PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
+	disk->header->num_blocks = num_blocks;
 	disk->header->bitmap_blocks = num_blocks;
 	disk->header->bitmap_entries = bitmap_entries;
 	disk->header->free_blocks = num_blocks; // TODO: calcolare quanti sono i blocchi liberi
 
-	// Creo una BitMap e memorizzo le informazioni e il contenuto del file aperto
-	disk->bitmap = (BitMap*) malloc(sizeof(BitMap));
-	disk->bitmap->num_bits = num_blocks * BLOCK_SIZE;
-	disk->bitmap->entries = malloc(disk->bitmap->num_bits);
+	// Memorizzo in bitmap_data il puntatore alla mmap saltando lo spazio dedicato a DiskHeader
+	disk->bitmap_data = disk->header + sizeof(DiskHeader);
 	
 	// Imposto tutti i bit della BitMap a zero
 	int i;
@@ -77,10 +74,12 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 		DiskDriver_freeBlock(disk, i);
 	}
 
-	// Sovrascrivo i dati del file nella BitMap
+	/* TODO : Controllare la scrittura
+	// Sovrascrivo i dati del file nella BitMap 
 	for(i = 0; i < file_size; i++){
 		disk->bitmap->entries[i] = file_content[i];
 	}
+	*/
 
 	// Calcolo il primo blocco libero dopo aver assegnato il valore alle entries
 	disk->header->first_free_block = DiskDriver_getFreeBlock(disk, 0);
@@ -129,10 +128,14 @@ int DiskDriver_writeBlock(DiskDriver * disk, void * src, int block_num) {
 int DiskDriver_freeBlock(DiskDriver* disk, int block_num) {
 	if(block_num > disk->header->num_blocks) return -1;
 
+	BitMap bitmap = malloc(sizeof(BitMap));
+	bitmap.num_bits = disk->header->bitmap_entries;
+	bitmap.entries = disk->bitmap_data;
+
 	// Setto i bit del blocco "block_num" a 0
 	int i;
 	for(i = block_num * BLOCK_SIZE ; i < (block_num+1) * BLOCK_SIZE; i++){
-		BitMap_set(disk->bitmap, i, 0);
+		BitMap_set(&bitmap, i, 0);
 	}
 
 	// Incremento il numero di blocchi liberi nel DiskHeader

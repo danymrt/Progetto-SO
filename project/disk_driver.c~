@@ -59,17 +59,15 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 	read(file, file_content, file_size);
 
 	// Creiamo un DiskHeader che andrà inserito nel DiskDriver
-	//disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries, PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
-	disk->header = (DiskHeader*) malloc(sizeof(DiskHeader));
-	disk->header->num_blocks = num_blocks;	// TODO: Se utilizzamo mmap, da questa riga in poi, il file viene sovrascritto, correggere. Con /0 non funziona
+	disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries, PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
+	//disk->header = (DiskHeader*) malloc(sizeof(DiskHeader));
+	disk->header->num_blocks = num_blocks;
 	disk->header->bitmap_blocks = num_blocks;
 	disk->header->bitmap_entries = bitmap_entries;
 	disk->header->free_blocks = num_blocks; // TODO: calcolare quanti sono i blocchi liberi
 
-	// Creo una BitMap e memorizzo le informazioni e il contenuto del file aperto
-	disk->bitmap = (BitMap*) malloc(sizeof(BitMap));
-	disk->bitmap->num_bits = num_blocks * BLOCK_SIZE;
-	disk->bitmap->entries = malloc(disk->bitmap->num_bits);
+	// Memorizzo i dati della BitMap all'interno di Disk
+	disk->bitmap_data = disk->header + sizeof(DiskHeader);
 	
 	// Imposto tutti i bit della BitMap a zero
 	int i;
@@ -97,19 +95,9 @@ int DiskDriver_readBlock(DiskDriver* disk, void * dest, int block_num){
 
 	// Se la funzione mi restituisce -1, restituisco un errore
 	if(lseek(disk->fd, (block_num * BLOCK_SIZE) / 8, SEEK_SET) == -1) return -2;
-	
-/*
-	printf("\n\ne prima : %s\n",disk->bitmap->entries);
-	printf("d prima : %s\n",(char*)dest);
-	dest = disk->bitmap->entries;
-	printf("e dopo  : %s\n",disk->bitmap->entries);
-	printf("d dopo  : %s\n",(char*)dest);
-*/
 
 	// Leggiamo il contenuto delle entries e lo memorizziamo in dest
 	read(disk->fd, dest, strlen(disk->bitmap->entries));
-
-//	memcpy(dest, (void *) disk->bitmap->entries, 2);
 
 	return 0;
 }
@@ -139,10 +127,14 @@ int DiskDriver_writeBlock(DiskDriver * disk, void * src, int block_num) {
 int DiskDriver_freeBlock(DiskDriver* disk, int block_num) {
 	if(block_num > disk->header->num_blocks) return -1;
 
+	BitMap bitmap = malloc(sizeof(BitMap));
+	bitmap.num_bits = disk->header->bitmap_entries;
+	bitmap.entries = disk->bitmap_data;
+
 	// Setto i bit del blocco "block_num" a 0
 	int i;
 	for(i = block_num * BLOCK_SIZE ; i < (block_num+1) * BLOCK_SIZE; i++){
-		BitMap_set(disk->bitmap, i, 0);
+		BitMap_set(&bitmap, i, 0);
 	}
 
 	// Incremento il numero di blocchi liberi nel DiskHeader

@@ -14,7 +14,7 @@ typedef struct {
 
 typedef struct {
   DiskHeader* header; // mmapped
-  BitMap* bitmap;  // mmapped (bitmap)
+  char* bitmap_data;  // mmapped (bitmap)
   int fd; // for us
 } DiskDriver;
 
