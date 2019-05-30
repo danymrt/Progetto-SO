@@ -54,6 +54,7 @@ int main(int agc, char** argv) {
 	printf("\n    Prima della write => ");
 	stampa_in_binario(bitmap.entries);
  
+
 	// Test DiskDriver_writeBlock  
 	printf("\n\n+++ Test DiskDriver_writeBlock()");
 	printf("\n+++ Test DiskDriver_flush()");
@@ -77,9 +78,7 @@ int main(int agc, char** argv) {
 
   
 	// Test BitMap_get
-	printf("\n\n+++ Test BitMap_get()");  
-	printf("\n    disk->bitmap_data contiene, in binario: "); 
-	stampa_in_binario(bitmap.entries);
+	printf("\n\n+++ Test BitMap_get()");
 	int start = 6, status = 0;    
 	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(&bitmap, start, status));
 	start = 3, status = 1; 
