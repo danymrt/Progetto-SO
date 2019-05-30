@@ -148,7 +148,12 @@ int DiskDriver_writeBlock(DiskDriver * disk, void * src, int block_num) {
 
 	// Scrivo "src" nel file. Se non riesco, restituisco -1
 	int write_size = strlen(src) > BLOCK_SIZE / 8 ? BLOCK_SIZE / 8 : strlen(src);
-  return write(disk->fd, src, write_size);
+	int bits_write = write(disk->fd, src, write_size);
+	
+	// Mi assicuro che il contenuto della write sia memorizzato su disk 
+	if(DiskDriver_flush(disk) == -1) return -1;
+
+  return bits_write;
 }
 
 
@@ -193,5 +198,9 @@ int DiskDriver_getFreeBlock(DiskDriver* disk, int start) {
 
 // writes the data (flushing the mmaps)
 int DiskDriver_flush(DiskDriver* disk) {
+	
+	int d_size = sizeof(DiskHeader) + disk->header->bitmap_entries + ((disk->header->num_blocks*BLOCK_SIZE) / 8);
+
+	return msync(disk->header, d_size, MS_SYNC);
 
 }

@@ -56,6 +56,7 @@ int main(int agc, char** argv) {
  
 	// Test DiskDriver_writeBlock  
 	printf("\n\n+++ Test DiskDriver_writeBlock()");
+	printf("\n+++ Test DiskDriver_flush()");
 	printf("\n    Il risultato della writeBlock(\"Ciao\", 0) è %d", DiskDriver_writeBlock(&disk, "Ciao", 0));
 
  
