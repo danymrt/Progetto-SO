@@ -20,9 +20,8 @@ void stampa_in_binario(char* stringa) {
 
 int main(int agc, char** argv) {
 
-	// Test BitMap_create   
+	// Test DiskDriver_init   
 	printf("\n+++ Test DiskDriver_init()");
-	printf("\n+++ Test BitMap_init()");
 	printf("\n+++ Test DiskDriver_getFreeBlock()");
 	printf("\n+++ Test BitMap_get()");
 	DiskDriver disk;
@@ -81,13 +80,24 @@ int main(int agc, char** argv) {
 	printf("\n\n+++ Test BitMap_get()");
 	int start = 6, status = 0;    
 	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(&bitmap, start, status));
-	start = 3, status = 1; 
+	start = 3, status = 1;   
 	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(&bitmap, start, status));
 	start = 12, status = 0;
 	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(&bitmap, start, status));
 	start = 13, status = 1;
 	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d\n", start, status, BitMap_get(&bitmap, start, status));
 
+	// Test SimpleFS_init   
+	printf("\n+++ Test SimpleFS_init()");
+	printf("\n+++ Test SimpleFS_format()");
+	SimpleFS fs;
+	DirectoryHandle * d;
+	d = SimpleFS_init(&fs, &disk);
+	printf("\n    File System creato e inizializzato correttamente");
+
+	// Test SimpleFS_createFile
+	printf("\n+++ Test SimpleFS_createFile()");
+	SimpleFS_createFile(d,"ok.txt");
 
 	printf("\n\n");
 }

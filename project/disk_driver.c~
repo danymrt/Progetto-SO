@@ -38,7 +38,7 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 		// alloco la memoria necessaria al file per evitare "bus error"
 		int ret = posix_fallocate(file, 0, sizeof(DiskHeader) + bitmap_entries + num_blocks*BLOCK_SIZE);
 		disk->fd = file;
-		disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries + ((num_blocks*BLOCK_SIZE) / 8), PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
+		disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries + (num_blocks*BLOCK_SIZE), PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
 		
 	}else{ // se il file è stato appena creato
 		file = open(filename, O_CREAT | O_RDWR, 0666);
@@ -52,7 +52,7 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 		int ret = posix_fallocate(file, 0, sizeof(DiskHeader) + bitmap_entries + num_blocks*BLOCK_SIZE);
 
 		// Creiamo un DiskHeader che andrà inserito nel DiskDriver
-		disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries + ((num_blocks*BLOCK_SIZE) / 8), PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
+		disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries + (num_blocks*BLOCK_SIZE), PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
 		disk->header->num_blocks = num_blocks;
 		disk->header->bitmap_blocks = num_blocks;
 		disk->header->bitmap_entries = bitmap_entries;
@@ -96,6 +96,7 @@ int DiskDriver_readBlock(DiskDriver* disk, void * dest, int block_num){
 // writes a block in position block_num, and alters the bitmap accordingly, returns -1 if operation not possible
 int DiskDriver_writeBlock(DiskDriver * disk, void * src, int block_num) {
 
+	// Creo la bitmap che andrò ad utilizzare per la BitMap_get()
 	BitMap bitmap;
 	bitmap.num_bits = disk->header->bitmap_blocks;
 	bitmap.entries = disk->bitmap_data;
@@ -104,13 +105,14 @@ int DiskDriver_writeBlock(DiskDriver * disk, void * src, int block_num) {
 	int start = sizeof(DiskHeader) + disk->header->bitmap_entries + block_num * BLOCK_SIZE;
 	if(lseek(disk->fd, start , SEEK_SET) == -1) return -1;
 
+	// Se la lunghezza della stringa da scrivere è occupa più della dimensione del blocco, restituisco -1
 	if(strlen(src) * 8 > BLOCK_SIZE) return -1;
 
 	// Scrivo che il blocco è occupato
 	BitMap_set(&bitmap, block_num, 1);
 
 	// Scrivo "src" nel file. Se non riesco, restituisco -1
-	int write_size = strlen(src) > BLOCK_SIZE / 8 ? BLOCK_SIZE / 8 : strlen(src);
+	int write_size = strlen(src) > BLOCK_SIZE ? BLOCK_SIZE : strlen(src);
 	int bits_write = write(disk->fd, src, write_size);
 	
 	// Mi assicuro che il contenuto della write sia memorizzato su disk 
@@ -122,8 +124,11 @@ int DiskDriver_writeBlock(DiskDriver * disk, void * src, int block_num) {
 
 // frees a block in position block_num, and alters the bitmap accordingly, returns -1 if operation not possible
 int DiskDriver_freeBlock(DiskDriver* disk, int block_num) {
+
+	// Se il blocco che devo liberare non fa parte del mio disk, restituisco -1
 	if(block_num > disk->header->num_blocks) return -1;
 
+	// Creo la bitmap che andrò ad utilizzare per la BitMap_get()
 	BitMap bitmap;
 	bitmap.num_bits = disk->header->bitmap_blocks;
 	bitmap.entries = disk->bitmap_data;
@@ -144,6 +149,7 @@ int DiskDriver_freeBlock(DiskDriver* disk, int block_num) {
 // returns the first free block in the disk from position (checking the bitmap)
 int DiskDriver_getFreeBlock(DiskDriver* disk, int start) {
 	
+	// Creo la bitmap che andrò ad utilizzare per la BitMap_get()
 	BitMap bitmap;
 	bitmap.num_bits = disk->header->bitmap_blocks;
 	bitmap.entries = disk->bitmap_data;
@@ -162,8 +168,10 @@ int DiskDriver_getFreeBlock(DiskDriver* disk, int start) {
 // writes the data (flushing the mmaps)
 int DiskDriver_flush(DiskDriver* disk) {
 	
-	int d_size = sizeof(DiskHeader) + disk->header->bitmap_entries + ((disk->header->num_blocks*BLOCK_SIZE) / 8);
+	// Calcolo la lunghezza della memoria da sincronizzare
+	int disk_size = sizeof(DiskHeader) + disk->header->bitmap_entries + (disk->header->num_blocks*BLOCK_SIZE) ;
 
-	return msync(disk->header, d_size, MS_SYNC);
+	// Sincronizzo la memoria modificata ed il file collegato dalla mmap()
+	return msync(disk->header, disk_size, MS_SYNC);
 
 }
