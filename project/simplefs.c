@@ -22,12 +22,12 @@ DirectoryHandle* SimpleFS_init(SimpleFS* fs, DiskDriver* disk) {
 
 	// Recupero la FirstDirectoryBlock memorizzata su disco e memorizzo le sue informazioni
 	FirstDirectoryBlock * first_directory_block = malloc(sizeof(FirstDirectoryBlock));
-	DiskDriver_readBlock(fs->disk, first_directory_block, 0);
+	DiskDriver_readBlock(disk, first_directory_block, count_blocks(sizeof(DiskHeader)) + disk->header->bitmap_blocks);
 	directory_handle->dcb = first_directory_block;
 	directory_handle->directory = NULL;
   directory_handle->current_block = &(directory_handle->dcb->header);
   directory_handle->pos_in_dir = 0;
-  directory_handle->pos_in_block = 0;
+  directory_handle->pos_in_block = first_directory_block->fcb.block_in_disk;
 
 	// Restituisco il DirectoryHandle popolato
 	return directory_handle;
@@ -45,7 +45,7 @@ void SimpleFS_format(SimpleFS* fs) {
 	BitMap bitmap;
 	bitmap.num_bits = fs->disk->header->bitmap_blocks;
 	bitmap.entries = fs->disk->bitmap_data;
-	for(i = 0; i < fs->disk->header->num_blocks * BLOCK_SIZE; i++) {
+	for(i = 0; i < fs->disk->header->bitmap_entries; i++) {
 		BitMap_set(&bitmap, i, 0);
 	}
 
@@ -59,13 +59,13 @@ void SimpleFS_format(SimpleFS* fs) {
 
 	// Inserisco le informazioni relative al FileControlBlock
 	first_directory_block->fcb.directory_block = -1;
-	first_directory_block->fcb.block_in_disk = 0; //TODO
-  strcpy(first_directory_block->fcb.name,"/"); //copia la stringa nell'array
-  first_directory_block->fcb.size_in_bytes = (BLOCK_SIZE / 8) + sizeof(FirstDirectoryBlock) + sizeof(BlockHeader) + sizeof(FileControlBlock); //TODO:  
-  first_directory_block->fcb.size_in_blocks = first_directory_block->fcb.size_in_bytes % BLOCK_SIZE == 0 ? first_directory_block->fcb.size_in_bytes / BLOCK_SIZE : first_directory_block->fcb.size_in_bytes / BLOCK_SIZE + 1;;
+	first_directory_block->fcb.block_in_disk = count_blocks(sizeof(DiskHeader)) + fs->disk->header->bitmap_blocks;
+  strcpy(first_directory_block->fcb.name,"/");
+  first_directory_block->fcb.size_in_bytes = sizeof(FirstDirectoryBlock);
+  first_directory_block->fcb.size_in_blocks = count_blocks(first_directory_block->fcb.size_in_bytes);
   first_directory_block->fcb.is_dir = 1;
 
-	first_directory_block.num_entries = 0;
+	first_directory_block->num_entries = 0;
 
 	// Memorizziamo la FirstDirectoryBlock nel disco
 	DiskDriver_writeBlock(fs->disk, first_directory_block, 0);
@@ -83,81 +83,82 @@ FileHandle* SimpleFS_createFile(DirectoryHandle* d, const char* filename) {
 		return NULL; 
 	}
 	
-	//if()//TODO: caso in cui il file già esiste()
+	// TODO: caso in cui il file già esiste
 
 	// Mi creo il FileHandle e ci inserisco le informazioni relative
 	FileHandle * file_handle = malloc(sizeof(FileHandle));
 	file_handle->sfs = d->sfs;
 
 	FirstFileBlock * first_file_block = malloc(sizeof(FirstFileBlock)); 
-	first_file_block->header.previous_block = -1 ; //TODO	
-	first_file_block->header.next_block = -1 ; //TODO
+	first_file_block->header.previous_block = -1;
+	first_file_block->header.next_block = -1;
 	first_file_block->header.block_in_file = 0;
 	
 	first_file_block->fcb.directory_block = d->dcb->fcb.block_in_disk; 
-	first_file_block->fcb.block_in_disk = DiskDriver_getFreeBlock(d->sfs->disk, first_file_block->fcb.directory_block);
+	first_file_block->fcb.block_in_disk = DiskDriver_getFreeBlock(d->sfs->disk, count_blocks(sizeof(DiskHeader)) + d->sfs->disk->header->bitmap_blocks);
 	strcpy(first_file_block->fcb.name,filename);
-	first_file_block->fcb.size_in_bytes = sizeof(FirstFileBlock) + sizeof(BlockHeader); 
-	first_file_block->fcb.size_in_blocks = first_file_block->fcb.size_in_bytes % BLOCK_SIZE == 0 ? first_file_block->fcb.size_in_bytes / BLOCK_SIZE : first_file_block->fcb.size_in_bytes / BLOCK_SIZE + 1;
+	first_file_block->fcb.size_in_bytes = sizeof(FirstFileBlock); 
+	first_file_block->fcb.size_in_blocks = count_blocks(sizeof(FirstFileBlock));
   first_file_block->fcb.is_dir = 0;
 	
-	strcpy(first_file_block->data,"");
+	strcpy(first_file_block->data,"\0");
 
 	file_handle->fcb = first_file_block;
 	file_handle->directory = d->dcb;
-	file_handle->current_block = &first_file_block->header; //TODO
-	file_handle->pos_in_file = first_file_block->fcb.block_in_disk;//TODO
-
-	//TODO: fare la write e la flush 
-	
+	file_handle->current_block = &(first_file_block->header);
+	file_handle->pos_in_file = 0;
 	
 	// Aggiungiamo in file_blocks il blocco in cui è contenuto questo file
-	DirectoryBlock * db = malloc(sizeof(FirstDirectoryBlock)); //TODO: db ha dimensioni diverse
-	if(d->dcb.header.next_block!=-1){// ha un next_block
-		int successivo;
-		db = d->dcb;
-		while(db.header.next_block != -1){
-				successivo = db.header.next_block;
-				DiskDriver_read(d->sfs->disk, db, successivo);
+	int db_block = d->dcb->fcb.block_in_disk;
+	DirectoryBlock * db;
+	if(d->dcb->header.next_block != -1){ // ha un next_block
+		db_block = d->dcb->header.next_block;
+		db = malloc(sizeof(DirectoryBlock));
+		DiskDriver_readBlock(d->sfs->disk, db, d->dcb->header.next_block);
+		while(db->header.next_block != -1){
+				db_block = db->header.next_block;
+				DiskDriver_readBlock(d->sfs->disk, db, db_block);
 		}
 	}else{
-		db=d->dcb; // Dentro db abbiamo l'ultimo blocco esistente della cartella
+		db = malloc(sizeof(FirstDirectoryBlock)); //TODO: db ha dimensioni diverse
+		DiskDriver_readBlock(d->sfs->disk, db, d->dcb->fcb.block_in_disk);
+	}
+	// In questo punto, dentro db abbiamo l'ultimo blocco esistente della cartella
+
+	int new_db_block;	
+	if(!space_in_dir(db)){
+		new_db_block = DiskDriver_getFreeBlock(d->sfs->disk, count_blocks(sizeof(DiskHeader)) + d->sfs->disk->header->bitmap_blocks);
+		DirectoryBlock * directory_block = malloc(sizeof(DirectoryBlock));
+		directory_block->header.next_block = -1;
+		directory_block->header.previous_block = db_block; 
+		directory_block->header.block_in_file = db->header.block_in_file + 1;
+
+		// Aggiorno il next_block del vecchio DirectoryBlock e lo sovrascrivo/aggiorno sul suo blocco
+		db->header.next_block = new_db_block;
+		DiskDriver_writeBlock(d->sfs->disk, db, db_block);
+
+		// Adatto i puntatori e i valori in modo che possano funzionare all'esterno
+		db = directory_block;
+		db_block = new_db_block;
 	}
 
-	// Controlliamo se c'è spazio nel file_blocks
-	// se c'è spazio
-		// ce l'aggiungiamo in coda (il blocco di questo file)
-	// se non c'è spazio
-		// creo un nuovo directoryblock
-		// aggiorno l'header del firstdirectoryblock
-	
-	int i = 0;
-	if(db.num_entries < sizeof(db.file_blocks)){
-		d->dcb->file_blocks[db.num_entries] = file_handle->pos_in_file; //TODO
-		d.num_entries++;
-	}else{
-		 DirectoryBlock * directory_block = malloc(sizeof(DirectoryBlock));
-		 directory_block->header.next_block = -1;
-		 directory_block->header.previous_block = db->header.block_in_file; 
-		 directory_block->header.block_in_file = ??;
-		 //directory d'origine num_entries++
-	}
-	
+	db->file_blocks[d->dcb->num_entries] = file_handle->fcb->fcb.block_in_disk;
+	d->dcb->num_entries++;
+
+	// Scrivo, su un nuovo blocco (libero) la DirectoryBlock appena creata
+	DiskDriver_writeBlock(d->sfs->disk, db, db_block);
+	DiskDriver_flush(d->sfs->disk);
+
 	return file_handle;
-
 }
 
 // reads in the (preallocated) blocks array, the name of all files in a directory
 int SimpleFS_readDir(char** names, DirectoryHandle* d) {
-	/*
 	int i;
-	for(i=0; i < d->dcb.header.next_block ; i++){
-		for(j=0; j < sizeof(d->dcb->file_blocks); j++){
-			names[i] = "mario"; //TODO: nome file
-		}
+	printf("\n");
+	for(i = 0; i < d->dcb->num_entries; i++) {
+		printf("%d\t", d->dcb->file_blocks[i]);
 	}
-	d->dcb->file_blocks	
-	*/
 }
 
 // opens a file in the  directory d. The file should be exisiting
@@ -205,97 +206,3 @@ int SimpleFS_mkDir(DirectoryHandle* d, char* dirname) {
 // if a directory, it removes recursively all contained files
 int SimpleFS_remove(SimpleFS* fs, char* filename) {
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

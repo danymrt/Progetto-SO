@@ -18,6 +18,21 @@ void stampa_in_binario(char* stringa) {
 	}
 }
 
+int count_blocks(int num_bytes) {
+	return num_bytes % BLOCK_SIZE == 0 ? num_bytes / BLOCK_SIZE : ( num_bytes / BLOCK_SIZE ) + 1;
+}
+
+int space_in_dir(DirectoryBlock * db) {
+	int i, free_spaces;
+	while(i < sizeof(db->file_blocks)) {
+		if(db->file_blocks[i] == 0) {
+			free_spaces++;
+		}
+		i++;
+	}
+	return free_spaces;
+}
+
 int main(int agc, char** argv) {
 
 	// Test DiskDriver_init   
@@ -85,19 +100,24 @@ int main(int agc, char** argv) {
 	start = 12, status = 0;
 	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(&bitmap, start, status));
 	start = 13, status = 1;
-	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d\n", start, status, BitMap_get(&bitmap, start, status));
+	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(&bitmap, start, status));
 
 	// Test SimpleFS_init   
-	printf("\n+++ Test SimpleFS_init()");
+	printf("\n\n+++ Test SimpleFS_init()");
 	printf("\n+++ Test SimpleFS_format()");
 	SimpleFS fs;
-	DirectoryHandle * d;
-	d = SimpleFS_init(&fs, &disk);
+	DirectoryHandle * dir_handle = SimpleFS_init(&fs, &disk);
 	printf("\n    File System creato e inizializzato correttamente");
 
 	// Test SimpleFS_createFile
-	printf("\n+++ Test SimpleFS_createFile()");
-	SimpleFS_createFile(d,"ok.txt");
+	printf("\n\n+++ Test SimpleFS_createFile()");
+	SimpleFS_createFile(dir_handle,"ok.txt");
+	printf("\nFile creato correttamente");
+
+	// Test SimpleFS_readDir
+	printf("\n\n+++ Test SimpleFS_readDir()");
+	char ** elenco_files;
+	SimpleFS_readDir(elenco_files, dir_handle);
 
 	printf("\n\n");
 }

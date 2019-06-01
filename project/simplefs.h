@@ -74,7 +74,7 @@ typedef struct {
   FirstFileBlock* fcb;             // pointer to the first block of the file(read it)
   FirstDirectoryBlock* directory;  // pointer to the directory where the file is stored
   BlockHeader* current_block;      // current block in the file
-  int pos_in_file;                 // position of the cursor
+  int pos_in_file;                 // position of the cursor in the file
 } FileHandle;
 
 typedef struct {
