@@ -45,9 +45,11 @@ void SimpleFS_format(SimpleFS* fs) {
 	BitMap bitmap;
 	bitmap.num_bits = fs->disk->header->bitmap_blocks;
 	bitmap.entries = fs->disk->bitmap_data;
-	for(i = 0; i < fs->disk->header->bitmap_entries; i++) {
+	for(i = fs->disk->header->first_free_block; i < fs->disk->header->bitmap_entries; i++) {
 		BitMap_set(&bitmap, i, 0);
 	}
+	fs->disk->bitmap_data = bitmap.entries;
+	fs->disk->header->free_blocks = fs->disk->header->num_blocks - fs->disk->header->first_free_block;
 
 	// Creo il primo blocco della cartella "base"
 	FirstDirectoryBlock * first_directory_block = malloc(sizeof(FirstDirectoryBlock));
@@ -94,8 +96,9 @@ FileHandle* SimpleFS_createFile(DirectoryHandle* d, const char* filename) {
 	first_file_block->header.next_block = -1;
 	first_file_block->header.block_in_file = 0;
 	
-	first_file_block->fcb.directory_block = d->dcb->fcb.block_in_disk; 
+	first_file_block->fcb.directory_block = d->dcb->fcb.block_in_disk;
 	first_file_block->fcb.block_in_disk = DiskDriver_getFreeBlock(d->sfs->disk, count_blocks(sizeof(DiskHeader)) + d->sfs->disk->header->bitmap_blocks);
+	printf("\nfreeblocks = %d", d->sfs->disk->header->free_blocks);
 	strcpy(first_file_block->fcb.name,filename);
 	first_file_block->fcb.size_in_bytes = sizeof(FirstFileBlock); 
 	first_file_block->fcb.size_in_blocks = count_blocks(sizeof(FirstFileBlock));
@@ -123,6 +126,7 @@ FileHandle* SimpleFS_createFile(DirectoryHandle* d, const char* filename) {
 		db = malloc(sizeof(FirstDirectoryBlock)); //TODO: db ha dimensioni diverse
 		DiskDriver_readBlock(d->sfs->disk, db, d->dcb->fcb.block_in_disk);
 	}
+	
 	// In questo punto, dentro db abbiamo l'ultimo blocco esistente della cartella
 
 	int new_db_block;	
