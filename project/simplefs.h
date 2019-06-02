@@ -102,6 +102,9 @@ void SimpleFS_format(SimpleFS* fs);
 // an empty file consists only of a block of type FirstBlock
 FileHandle* SimpleFS_createFile(DirectoryHandle* d, const char* filename);
 
+//Legge le entries e le mette nell'array names
+void read_entries(char** names, DirectoryBlock * d, DiskDriver * disk, int c);
+
 // reads in the (preallocated) blocks array, the name of all files in a directory
 int SimpleFS_readDir(char** names, DirectoryHandle* d);
 

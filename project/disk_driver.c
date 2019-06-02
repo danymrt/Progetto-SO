@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
+
 // Apre il file (creandolo, se necessario), allocando lo spazio necessario sul disco e calcolando quanto deve essere grane la mappa se il file è stato appena creato.
 // Compila un Disk Header e riempie la Bitmap della dimensione appropriata con tutti 0 (per denotare lo spazio libero)
 // opens the file (creating it if necessary) allocates the necessary space on the disk calculates how big the bitmap should be
@@ -16,7 +17,6 @@
 void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 
 	// Calcoliamo quanti blocchi dovremo memorizzare nel disco
-	// Se il numero dei blocchi è multiplo di 8, impostiamo num_blocks/8, altrimenti aggiungiamo 1 (per arrotondare per eccesso)
 	int bitmap_entries = num_blocks;
 
 	// Variabile in cui memorizzare il file descriptor che ci aiuterà ad utilizzare il file stesso
@@ -49,18 +49,17 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 		// Creiamo un DiskHeader che andrà inserito nel DiskDriver
 		disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries + (num_blocks*BLOCK_SIZE), PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
 		disk->header->num_blocks = num_blocks;
-		disk->header->bitmap_blocks = count_blocks(bitmap_entries);
+		disk->header->bitmap_blocks = num_blocks;
 		disk->header->bitmap_entries = bitmap_entries;
-		disk->header->free_blocks = num_blocks - disk->header->bitmap_blocks - count_blocks(sizeof(DiskHeader));
-		lseek(file, 0, SEEK_SET);
-
+		disk->header->free_blocks = num_blocks ;
 	}
 
+	lseek(file, 0, SEEK_SET);
 	// Memorizzo in bitmap_data il puntatore alla mmap saltando lo spazio dedicato a DiskHeader
 	disk->bitmap_data = (char *) disk->header + sizeof(DiskHeader);
 
 	// Calcolo il primo blocco libero dopo aver assegnato il valore alle entries
-	disk->header->first_free_block = DiskDriver_getFreeBlock(disk, 0);
+	disk->header->first_free_block = DiskDriver_getFreeBlock(disk,0);
 
 	return;
 }
@@ -68,21 +67,18 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 
 // reads the block in position block_num, returns -1 if the block is free accrding to the bitmap 0 otherwise 
 int DiskDriver_readBlock(DiskDriver* disk, void * dest, int block_num){
+	if(block_num >= disk->header->num_blocks) return -1;
 
 	// Creo la bitmap che andrò ad utilizzare per la BitMap_get()
 	BitMap bitmap;
 	bitmap.num_bits = disk->header->bitmap_entries * 8;
 	bitmap.entries = disk->bitmap_data;
-
+	
 	// Se il blocco che si vuole leggere è vuoto, restituiamo un errore
 	if(BitMap_get(&bitmap, block_num, 0) == block_num) return -1;
-
-	// Sposto il puntatore nel blocco "block_num". Se non posso, restituisco -1
-	int start = sizeof(DiskHeader) + disk->header->bitmap_entries + block_num * BLOCK_SIZE;
-	if(lseek(disk->fd, start , SEEK_SET) == -1) return -1;
-
-	// Leggiamo il contenuto delle entries e lo memorizziamo in dest
-	read(disk->fd, dest, BLOCK_SIZE);
+	
+	//Leggo il blocco block_num e lo inserisco in dest
+	memcpy(dest, disk->bitmap_data + disk->header->bitmap_entries + (block_num * BLOCK_SIZE), BLOCK_SIZE);
 
 	return 0;
 }
@@ -90,31 +86,31 @@ int DiskDriver_readBlock(DiskDriver* disk, void * dest, int block_num){
 
 // writes a block in position block_num, and alters the bitmap accordingly, returns -1 if operation not possible
 int DiskDriver_writeBlock(DiskDriver * disk, void * src, int block_num) {
+	
+	if(block_num > disk->header->num_blocks) return -1;
 
 	// Creo la bitmap che andrò ad utilizzare per la BitMap_get()
 	BitMap bitmap;
 	bitmap.num_bits =disk->header->bitmap_entries * 8;
 	bitmap.entries = disk->bitmap_data;
+	
+	// Se il blocco è libero allora decremento free_block
+	if(BitMap_get(&bitmap,block_num,0) == block_num) disk->header->free_blocks--;
 
-	// Sposto il puntatore nel blocco "block_num". Se non posso, restituisco -1
-	int start = sizeof(DiskHeader) + disk->header->bitmap_entries + block_num * BLOCK_SIZE;
-	if(lseek(disk->fd, start , SEEK_SET) == -1) return -1;
-
-	// Se la lunghezza della stringa da scrivere è occupa più della dimensione del blocco, restituisco -1
 	if(strlen(src) * 8 > BLOCK_SIZE) return -1;
 
 	// Scrivo che il blocco è occupato
 	BitMap_set(&bitmap, block_num, 1);
-	if(DiskDriver_getFreeBlock(disk,block_num) == block_num) disk->header->free_blocks--;
 
-	// Scrivo "src" nel file. Se non riesco, restituisco -1
-	int write_size = strlen(src) > BLOCK_SIZE ? BLOCK_SIZE : strlen(src);
-	int bits_write = write(disk->fd, src, write_size);
-	
+	// Scrivo il contenuto di src in block_num
+	memcpy(disk->bitmap_data + disk->header->bitmap_entries + (block_num * BLOCK_SIZE), src, BLOCK_SIZE);
+
 	// Mi assicuro che il contenuto della write sia memorizzato su disk 
 	if(DiskDriver_flush(disk) == -1) return -1;
 
-  return bits_write;
+	disk->header->first_free_block = DiskDriver_getFreeBlock(disk,0);		
+
+  return 0;
 }
 
 
@@ -125,7 +121,7 @@ int DiskDriver_freeBlock(DiskDriver* disk, int block_num) {
 	if(block_num > disk->header->num_blocks) return -1;
 
 	// Incremento il numero di blocchi liberi nel DiskHeader
-	if(DiskDriver_getFreeBlock(disk,block_num) != block_num) disk->header->free_blocks++;
+	if(DiskDriver_getFreeBlock(disk,block_num-1) != block_num) disk->header->free_blocks++;
 
 	// Creo la bitmap che andrò ad utilizzare per la BitMap_get()
 	BitMap bitmap;

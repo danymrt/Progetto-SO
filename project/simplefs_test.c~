@@ -1,4 +1,4 @@
-#include "bitmap.c"
+#include "bitmap.c" 
 #include "disk_driver.c"
 #include "simplefs.c"
 #include <stdio.h>
@@ -15,7 +15,7 @@ void stampa_in_binario(char* stringa) {
 		for (j = 7; j >= 0; j--) {
 	      printf("%d", !!((c >> j) & 0x01)); 
 	  }
-	}
+	} 
 }
 
 int count_blocks(int num_bytes) {
@@ -23,7 +23,8 @@ int count_blocks(int num_bytes) {
 }
 
 int space_in_dir(DirectoryBlock * db) {
-	int i, free_spaces;
+	int i = 0, free_spaces;
+	printf("\n");
 	while(i < sizeof(db->file_blocks)) {
 		if(db->file_blocks[i] == 0) {
 			free_spaces++;
@@ -60,13 +61,12 @@ int main(int agc, char** argv) {
 	int posizione = BitMap_indexToBlock(block); 
 	printf("\n    Abbiamo la entry %d e lo sfasamento %d, ovvero la posizione %d", block.entry_num, block.bit_num, posizione);
  
-
 	// Test DiskDriver_writeBlock  
 	printf("\n\n+++ Test DiskDriver_writeBlock()");
 	printf("\n+++ Test DiskDriver_flush()");
 	printf("\n    Prima => ");
 	stampa_in_binario(bitmap.entries);
-	printf("\n    Il risultato della writeBlock(\"Ciao\", 10) è %d", DiskDriver_writeBlock(&disk, "Ciao", 10));
+	printf("\n    Il risultato della writeBlock(\"Ciao\", 4) è %d", DiskDriver_writeBlock(&disk, "Ciao", 4));
 	printf("\n    Dopo  => ");
 	stampa_in_binario(bitmap.entries);
 
@@ -74,17 +74,8 @@ int main(int agc, char** argv) {
 	// Test DiskDriver_readBlock
 	printf("\n\n+++ Test DiskDriver_readBlock()");
 	void * dest = malloc(BLOCK_SIZE);
-	printf("\n    Controlliamo tramite una readBlock(dest, 10)   => %d", DiskDriver_readBlock(&disk, dest, 10));
+	printf("\n    Controlliamo tramite una readBlock(dest, 4)   => %d", DiskDriver_readBlock(&disk, dest, 4));
 	printf("\n    Dopo la readBlock, la dest contiene            => %s", (char *) dest);
-
-
-	// Test DiskDriver_freeBlock
-	printf("\n\n+++ Test DiskDriver_freeBlock()");
-	printf("\n    Prima => ");
-	stampa_in_binario(bitmap.entries);
-	printf("\n    Libero il blocco %d, la funzione ritorna: %d",10,DiskDriver_freeBlock(&disk,10));
-	printf("\n    Dopo  => ");
-	stampa_in_binario(bitmap.entries);
 
 /*
 	// Test BitMap_set
@@ -94,9 +85,8 @@ int main(int agc, char** argv) {
 	printf("\n    Bitmap_set(10, 1) => %d", BitMap_set(&bitmap, 10, 1));
 	printf("\n    Dopo  => ");
 	stampa_in_binario(bitmap.entries);
-*/
 
-  
+  */
 	// Test BitMap_get
 	printf("\n\n+++ Test BitMap_get()");
 	int start = 6, status = 0;    
@@ -108,23 +98,47 @@ int main(int agc, char** argv) {
 	start = 13, status = 1;
 	printf("\n    Partiamo dalla posizione %d e cerchiamo %d => %d", start, status, BitMap_get(&bitmap, start, status));
 
+	// Test DiskDriver_freeBlock
+	// Test BitMap_set
+	printf("\n\n+++ Test DiskDriver_freeBlock()");
+	printf("\n\n+++ Test DiskDriver_set()");
+	printf("\n    Prima => ");
+	stampa_in_binario(bitmap.entries);
+	printf("\n    Libero il blocco %d, la funzione ritorna: %d",4,DiskDriver_freeBlock(&disk,4));
+	printf("\n    Dopo  => ");
+	stampa_in_binario(bitmap.entries);
+
 
 	// Test SimpleFS_init   
 	printf("\n\n+++ Test SimpleFS_init()");
 	printf("\n+++ Test SimpleFS_format()");
+	printf("\n");
+	stampa_in_binario(disk.bitmap_data);
 	SimpleFS fs;
 	DirectoryHandle * dir_handle = SimpleFS_init(&fs, &disk);
 	printf("\n    File System creato e inizializzato correttamente");
-
+	printf("\n");
+	stampa_in_binario(disk.bitmap_data);
+/*
 	// Test SimpleFS_createFile
 	printf("\n\n+++ Test SimpleFS_createFile()");
 	SimpleFS_createFile(dir_handle,"ok.txt");
+	printf("\n");
+	stampa_in_binario(disk.bitmap_data);
 	printf("\nFile creato correttamente");
 
-	// Test SimpleFS_readDir
+// Test SimpleFS_createFile
+	printf("\n\n+++ Test SimpleFS_createFile()");
+	SimpleFS_createFile(dir_handle,"ciao.txt");
+	printf("\n");
+	stampa_in_binario(disk.bitmap_data);
+	printf("\nFile creato correttamente");
+*/
+ 	// Test SimpleFS_readDir
 	printf("\n\n+++ Test SimpleFS_readDir()");
-	char ** elenco_files;
+	char ** elenco_files = malloc(BLOCK_SIZE);
 	SimpleFS_readDir(elenco_files, dir_handle);
+	printf("\n%s %s",elenco_files[0],elenco_files[1]);
 
 	printf("\n\n");
 }

@@ -60,7 +60,7 @@ int BitMap_get(BitMap* bitmap, int start, int status) {
 		// Se sforiamo le entries, restituisce -1 perché "status" non è stato trovato
 		if(i == bitmap->num_bits) return -1;
 		BitMapEntryKey bmek = BitMap_blockToIndex(i);
-	 	result = (bitmap->entries[bmek.entry_num] & (1 << (7 - bmek.bit_num))); //TODO modificarlo
+	 	result = (bitmap->entries[bmek.entry_num] & (1 << (7 - bmek.bit_num))); 
 
 		// Se dobbiamo verificare "status=1", il risultato deve essere ">0", altrimenti deve essere "=0"
 		if(status == 1) {

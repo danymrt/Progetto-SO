@@ -53,13 +53,12 @@ int BitMap_get(BitMap* bitmap, int start, int status) {
 
 	// Definiamo le variabili che si useranno all'interno
 	int posizione, i, result;
-	printf("\nnum_bits: %d\n",bitmap->num_bits);
 
 	// Per ogni bit a partire da "start", verifichiamo
 	for(i = start; i <= bitmap->num_bits; i++) {
 
 		// Se sforiamo le entries, restituisce -1 perché "status" non è stato trovato
-		if(i == bitmap->num_bits) return -3;
+		if(i == bitmap->num_bits) return -1;
 		BitMapEntryKey bmek = BitMap_blockToIndex(i);
 	 	result = (bitmap->entries[bmek.entry_num] & (1 << (7 - bmek.bit_num))); //TODO modificarlo
 
