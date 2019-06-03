@@ -11,8 +11,6 @@ typedef struct {
 	char bit_num;
 } BitMapEntryKey;
 
-void BitMap_init();
-
 // converts a block index to an index in the array,
 // and a char that indicates the offset of the bit inside the array
 BitMapEntryKey BitMap_blockToIndex(int num);

@@ -108,7 +108,7 @@ int DiskDriver_writeBlock(DiskDriver * disk, void * src, int block_num) {
 	// Mi assicuro che il contenuto della write sia memorizzato su disk 
 	if(DiskDriver_flush(disk) == -1) return -1;
 
-	//disk->header->first_free_block = DiskDriver_getFreeBlock(disk,0);		
+	disk->header->first_free_block = DiskDriver_getFreeBlock(disk,0);		
 
   return 0;
 }

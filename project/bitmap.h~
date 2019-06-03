@@ -3,7 +3,7 @@
 
 typedef struct{
 	int num_bits;
-	uint8_t* entries;
+	char* entries;
 }  BitMap;
 
 typedef struct {
