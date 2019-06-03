@@ -15,7 +15,7 @@
 // 2 = DiskDriver
 // 3 = SimpleFS
 int test = 3;
-int use_global_test = TRUE;
+int use_global_test = FALSE;
 
 void stampa_in_binario(char* stringa) {
 	int i, j;
@@ -31,13 +31,12 @@ int count_blocks(int num_bytes) {
 	return num_bytes % BLOCK_SIZE == 0 ? num_bytes / BLOCK_SIZE : ( num_bytes / BLOCK_SIZE ) + 1;
 }
 
-int space_in_dir(DirectoryBlock * db) {
-	int i = 0, free_spaces;
-	printf("\n");
-	while(i < sizeof(db->file_blocks)) {
-		if(db->file_blocks[i] == 0) {
-			free_spaces++;
-		}
+int space_in_dir(int * file_blocks, int dim) {
+	int i = 0;
+	int free_spaces = 0;
+	while(i < dim) {
+		if(*file_blocks == 0) free_spaces++;
+		file_blocks++;
 		i++;
 	}
 	return free_spaces;
@@ -158,7 +157,7 @@ int main(int agc, char** argv) {
 
 		// Test SimpleFS_createFile
 		printf("\n\n+++ Test SimpleFS_createFile()");
-		int i, num_file = 20;
+		int i, num_file = 4;
 		for(i = 0; i < num_file; i++) {
 			char filename[255];
 			sprintf(filename, "prova_%d.txt", dir_handle->dcb->num_entries);
@@ -167,23 +166,24 @@ int main(int agc, char** argv) {
 			else
 				printf("\n    Errore nella creazione di %s", filename);
 		}
-		printf("\n    ");
-		stampa_in_binario(disk.bitmap_data);
 
-	 	// Test SimpleFS_readDir
+	 	// Test SimpleFS_mkDir
+		printf("\n\n+++ Test SimpleFS_mkDir()");
+		printf("\n    Il risultato della SimpleFS_mkDir(dh, \"pluto\") è: %d", SimpleFS_mkDir(dir_handle, "pluto"));
+
 		printf("\n\n+++ Test SimpleFS_readDir()");
-		char ** elenco_files = malloc(dir_handle->dcb->num_entries * 255);
-		SimpleFS_readDir(elenco_files, dir_handle);
-		printf("\n    Nella cartella ci sono %d files:", dir_handle->dcb->num_entries);
+		printf("\n    Nella cartella ci sono %d elementi:", dir_handle->dcb->num_entries);
+		char ** elenco2 = malloc(dir_handle->dcb->num_entries * 255);
+		SimpleFS_readDir(elenco2, dir_handle);
 		for(i = 0; i < dir_handle->dcb->num_entries; i++) {
-			printf("\n    > %s", elenco_files[i]);
+			printf("\n    > %s", elenco2[i]);
 		}
 
 		printf("\n\n+++ Test SimpleFS_openFile()");
-		printf("\n\n+++ Test SimpleFS_close()");
 		printf("\n\n+++ Test SimpleFS_write()");
+		printf("\n\n+++ Test SimpleFS_read()");
+		printf("\n\n+++ Test SimpleFS_close()");
 		printf("\n\n+++ Test SimpleFS_seek()");
-		printf("\n\n+++ Test SimpleFS_mkDir()");
 		printf("\n\n+++ Test SimpleFS_remove()");
 
 	}

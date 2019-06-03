@@ -49,7 +49,7 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 		// Creiamo un DiskHeader che andrà inserito nel DiskDriver
 		disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries + (num_blocks*BLOCK_SIZE), PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
 		disk->header->num_blocks = num_blocks;
-		disk->header->bitmap_blocks = num_blocks;
+		disk->header->bitmap_blocks = count_blocks(bitmap_entries);
 		disk->header->bitmap_entries = bitmap_entries;
 		disk->header->free_blocks = num_blocks ;
 	}

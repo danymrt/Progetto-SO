@@ -91,7 +91,7 @@ int DiskDriver_writeBlock(DiskDriver * disk, void * src, int block_num) {
 
 	// Creo la bitmap che andrò ad utilizzare per la BitMap_get()
 	BitMap bitmap;
-	bitmap.num_bits =disk->header->bitmap_entries * 8;
+	bitmap.num_bits = disk->header->bitmap_entries * 8;
 	bitmap.entries = disk->bitmap_data;
 	
 	// Se il blocco è libero allora decremento free_block
