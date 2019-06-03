@@ -100,7 +100,7 @@ FileHandle* SimpleFS_createFile(DirectoryHandle* d, const char* filename) {
 		return NULL; 
 	}
 	
-	if(!SimpleFS_openFile(d, filename)) {
+	if(SimpleFS_openFile(d, filename) != NULL) {
 		return NULL;
 	}
 
@@ -191,7 +191,7 @@ int SimpleFS_readDir(char** names, DirectoryHandle* d) {
 	int i, j;
 	for(i = 0; i < d->dcb->num_entries; i++) {
 		j = i;
-		if(i > sizeof(db->file_blocks)) {
+		if(i >= sizeof(db->file_blocks)) {
 			DirectoryBlock * db;
 			j = j - sizeof(db->file_blocks);
 			DiskDriver_readBlock(d->sfs->disk, db, db->header.next_block);
@@ -206,11 +206,55 @@ int SimpleFS_readDir(char** names, DirectoryHandle* d) {
 
 // opens a file in the  directory d. The file should be exisiting
 FileHandle* SimpleFS_openFile(DirectoryHandle* d, const char* filename) {
+
+	FileHandle * file_handle = malloc(sizeof(FileHandle));
+	FirstDirectoryBlock * db = malloc(sizeof(FirstDirectoryBlock));
+	DiskDriver_readBlock(d->sfs->disk, db, d->dcb->fcb.block_in_disk);
+
+	int i, j;
+	for(i = 0; i < d->dcb->num_entries; i++) {
+		j = i;
+		if(i >= sizeof(db->file_blocks)) { 
+			DirectoryBlock * db;
+			j = j - sizeof(db->file_blocks);
+			DiskDriver_readBlock(d->sfs->disk, db, db->header.next_block);
+		}
+		FirstFileBlock * first_file_block = malloc(sizeof(FirstFileBlock));
+		DiskDriver_readBlock(d->sfs->disk, first_file_block, db->file_blocks[j]);
+
+		// Controllo se il file esiste
+		if(strcmp(first_file_block->fcb.name,filename)==0 && first_file_block->fcb.is_dir == 0){
+		
+			file_handle->sfs = d->sfs;
+			file_handle->fcb = first_file_block;
+			file_handle->directory = d->dcb;
+			file_handle->current_block = &(first_file_block->header);
+			file_handle->pos_in_file=0;
+
+			return file_handle;
+
+		}else{ //se non esiste restituisco null
+
+			return NULL;
+
+		}
+	}
 }
 
 // closes a file handle (destroyes it)
 int SimpleFS_close(FileHandle* f) {
 
+	if(f == NULL){
+		return -1;	
+	}
+
+	// Mi dealloco tutte le strutture prima di distruggere completamente il File Handle
+	free(f->fcb);
+
+	free(f->directory);
+
+	free(f);
+	return 0;
 
 }
 
@@ -243,7 +287,10 @@ int SimpleFS_seek(FileHandle* f, int pos) {
 // -1 on error
 int SimpleFS_mkDir(DirectoryHandle* d, char* dirname) {
 
-	// TODO: Se non c'è spazio per creare la cartella, restituisco -1
+	// Se non ci sono blocchi liberi per creare il file, restituisco errore
+	if(d->sfs->disk->header->free_blocks < 1){
+		return -1; 
+	}
 	// TODO: Se esiste già una cartella con lo stesso nome, restituisco -1
 
 	FirstDirectoryBlock * fdb = malloc(sizeof(FirstDirectoryBlock));

@@ -178,11 +178,36 @@ int main(int agc, char** argv) {
 		for(i = 0; i < dir_handle->dcb->num_entries; i++) {
 			printf("\n    > %s", elenco2[i]);
 		}
-
+		
+		// Test SimpleFS_openFile
 		printf("\n\n+++ Test SimpleFS_openFile()");
+		FileHandle * fh = SimpleFS_openFile(dir_handle,"prova.txt");
+		if(fh != NULL){
+			printf("\n    Abbiamo aperto il file: %s ",fh->fcb->fcb.name);
+		}else{
+			printf("\n    Il file %s non esiste","prova.txt");		
+		}
+		fh = SimpleFS_openFile(dir_handle,"prova_0.txt");
+		if(fh != NULL){
+			printf("\n    Abbiamo aperto il file: %s ",fh->fcb->fcb.name);
+		}else{
+			printf("\n    Il file %s non esiste","prova.txt");		
+		}
+
+		//Test per vedere se il file è già presente
+		if(SimpleFS_createFile(dir_handle,"prova_0.txt") != NULL)
+			printf("\n    File %s creato correttamente", "prova_0.txt");
+		else
+			printf("\n    Il file %s già esiste", "prova_0.txt");
+
+
 		printf("\n\n+++ Test SimpleFS_write()");
 		printf("\n\n+++ Test SimpleFS_read()");
+	
+		// Test SimpleFS_close
 		printf("\n\n+++ Test SimpleFS_close()");
+		printf("\n    La SimpleFS_close(fh) ha restituito %d", SimpleFS_close(fh));
+		
 		printf("\n\n+++ Test SimpleFS_seek()");
 		printf("\n\n+++ Test SimpleFS_remove()");
 
