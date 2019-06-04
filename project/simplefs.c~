@@ -262,6 +262,56 @@ int SimpleFS_close(FileHandle* f) {
 // overwriting and allocating new space if necessary
 // returns the number of bytes written
 int SimpleFS_write(FileHandle* f, void* data, int size) {
+	int i = 0, bytes_written = 0, bytes_to_write, current_block;
+
+	// Memorizzo le informazioni del primo blocco del file
+	FirstFileBlock * file = malloc(sizeof(FirstFileBlock));
+	current_block = f->fcb->fcb.block_in_disk;
+	DiskDriver_readBlock(f->sfs->disk, file, current_block);
+	
+	// Creo una copia della stringa da scrivere
+	char * copy = malloc(strlen(data));
+	strcpy(copy, data);
+
+	// Fino a quando ci sono byte da scrivere
+	//    Se i byte da scrivere sono più di quelli a mia disposizione
+	//       Se il blocco attuale ha un blocco successivo
+	//          Memorizzo le informazioni del blocco successivo
+	//       Altrimenti
+	//          Creo un nuovo blocco
+	//          Aggiorno il blocco attuale in modo che abbia come successivo il blocco appena creato
+	//       Scrivo i primi N byte dentro il blocco attuale
+	//       Creo un nuovo blocco da utilizzare in seguito
+	//    Altrimenti
+	//       Scrivo tutti i byte a disposizione dentro il blocco attuale
+	do {
+		if(strlen(copy) > sizeof(file->data)) {
+			bytes_to_write = sizeof(file->data);
+			strncpy(file->data, copy, bytes_to_write);
+			if(file->header.next_block != -1) {
+				current_block = file->header.next_block;
+				FileBlock * file = malloc(sizeof(FileBlock));
+				DiskDriver_readBlock(f->sfs->disk, file, file->header.next_block);
+			}else{
+				int next_block = DiskDriver_getFreeBlock(f->sfs->disk, 0);
+				file->header.next_block = next_block;
+				int next_index = file->header.block_in_file + 1;
+				FileBlock * file = malloc(sizeof(FileBlock));
+				file->header.previous_block = current_block;
+				file->header.next_block = -1;
+				file->header.block_in_file = next_index;
+				strcpy(file->data, "\0");
+				DiskDriver_writeBlock(f->sfs->disk, file, next_block);
+				current_block = next_block;
+			}
+		}else{
+			bytes_to_write = strlen(copy);
+			strncpy(file->data, copy, bytes_to_write);
+		}
+		copy += bytes_to_write;
+		bytes_written += bytes_to_write;
+	} while(strlen(copy) > 0);
+	return bytes_written;
 }
 
 // reads in the file, at current position size bytes stored in data

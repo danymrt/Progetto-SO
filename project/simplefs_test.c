@@ -151,7 +151,12 @@ int main(int agc, char** argv) {
 			DiskDriver_init(&disk, disk_filename, 15); 
 		}
 		DirectoryHandle * dir_handle = SimpleFS_init(&fs, &disk);
-		printf("\n    File System creato e inizializzato correttamente");
+		if(dir_handle != NULL) {
+			printf("\n    File System creato e inizializzato correttamente");
+		}else{
+			printf("\n    Errore nella creazione del file system\n");
+			return;
+		}
 		printf("\n    BitMap attuale: ");
 		stampa_in_binario(disk.bitmap_data);
 
@@ -161,16 +166,25 @@ int main(int agc, char** argv) {
 		for(i = 0; i < num_file; i++) {
 			char filename[255];
 			sprintf(filename, "prova_%d.txt", dir_handle->dcb->num_entries);
-			if(SimpleFS_createFile(dir_handle,filename) != NULL)
+			if(SimpleFS_createFile(dir_handle,filename) != NULL) {
 				printf("\n    File %s creato correttamente", filename);
-			else
+			}else{
 				printf("\n    Errore nella creazione di %s", filename);
+			}
 		}
 
 	 	// Test SimpleFS_mkDir
 		printf("\n\n+++ Test SimpleFS_mkDir()");
-		printf("\n    Il risultato della SimpleFS_mkDir(dh, \"pluto\") è: %d", SimpleFS_mkDir(dir_handle, "pluto"));
+		int ret = SimpleFS_mkDir(dir_handle, "pluto");
+		printf("\n    SimpleFS_mkDir(dh, \"pluto\") => %d", ret);
+		if(ret == 0) {
+			printf("\n    Cartella creata correttamente");
+		}else{
+			printf("\n    Errore nella creazione della cartella\n");
+			return;
+		}
 
+	 	// Test SimpleFS_readDir
 		printf("\n\n+++ Test SimpleFS_readDir()");
 		printf("\n    Nella cartella ci sono %d elementi:", dir_handle->dcb->num_entries);
 		char ** elenco2 = malloc(dir_handle->dcb->num_entries * 255);
@@ -183,14 +197,24 @@ int main(int agc, char** argv) {
 		printf("\n\n+++ Test SimpleFS_openFile()");
 		FileHandle * file_handle = malloc(sizeof(FileHandle));
 		file_handle = SimpleFS_openFile(dir_handle, "prova_1.txt");
-		if(file_handle == NULL) {
-			printf("\n    C'è stato un'errore nell'apertura del file.");
-		}else{
+		if(file_handle != NULL) {
 			printf("\n    File aperto correttamente");
+		}else{
+			printf("\n    Errore nell'apertura del file\n");
+			return;
 		}
 
 	 	// Test SimpleFS_write
 		printf("\n\n+++ Test SimpleFS_write()");
+		char stringa[22] = "Nel mezzo del cammin..";
+		ret = SimpleFS_write(file_handle, stringa, strlen(stringa));
+		printf("\n    SimpleFS_write(file_handle, \"%s\", %zu) => %d", stringa, strlen(stringa), ret);
+		if(ret == strlen(stringa)) {
+			printf("\n    Scrittura avvenuta correttamente");
+		}else{
+			printf("\n    Errore nella scrittura del file\n");
+			return;
+		}
 
 	 	// Test SimpleFS_read
 		printf("\n\n+++ Test SimpleFS_read()");
