@@ -303,6 +303,29 @@ int SimpleFS_read(FileHandle* f, void* data, int size) {
 // returns pos on success
 // -1 on error (file too short)
 int SimpleFS_seek(FileHandle* f, int pos) {
+
+	int i,j;
+	FirstFileBlock * file = malloc(sizeof(FirstFileBlock));
+	file = f->fcb;
+	int sum = sizeof(file->data);
+	
+	// Calcolo la dimensione totale del file
+	for(i=0; file->header.next_block!=-1; i++){
+		FileBlock * file =	malloc(sizeof(FileBlock));
+		DiskDriver_readBlock(f->sfs->disk, file, file->header.next_block);
+		sum += sizeof(file->data);
+	}
+
+	// Controllo se pos rientra nel file
+	//	In caso negativo ritorno -1
+	//  Altrimenti sposto il puntatore
+	if( pos + f->pos_in_file > sum){
+		return -1;	
+	}else{
+		f->pos_in_file = 	pos + f->pos_in_file;
+		return pos;
+	}
+
 }
 
 // seeks for a directory in d. If dirname is equal to ".." it goes one level up

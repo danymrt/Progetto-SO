@@ -203,9 +203,15 @@ int main(int agc, char** argv) {
 		printf("\n    La SimpleFS_changeDir() di %s ha restituito %d","..",SimpleFS_changeDir(dir_handle, ".."));
 		printf("\n    La SimpleFS_changeDir() di %s ha restituito %d","pluto",SimpleFS_changeDir(dir_handle, "pluto"));
 
-
-		printf("\n\n+++ Test SimpleFS_close()");
+		// Test SimpleFS_seek
 		printf("\n\n+++ Test SimpleFS_seek()");
+		printf("\n    La SimpleFS_seek() di %d ha restituito %d",10,SimpleFS_seek(file_handle, 10));
+		printf("\n    Il puntatore del file ora di trova in : %d", file_handle->pos_in_file);
+
+		// Test SimpleFS_close
+		printf("\n\n+++ Test SimpleFS_close()");
+		printf("\n    La SimpleFS_close() ha restituito %d",SimpleFS_close(file_handle));
+
 		printf("\n\n+++ Test SimpleFS_remove()");
 
 	}
