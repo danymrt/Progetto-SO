@@ -206,17 +206,20 @@ int SimpleFS_readDir(char** names, DirectoryHandle* d) {
 // opens a file in the  directory d. The file should be exisiting
 FileHandle* SimpleFS_openFile(DirectoryHandle* d, const char* filename) {
 
+	// Memorizzo le informazioni della cartella
 	FileHandle * file_handle = malloc(sizeof(FileHandle));
 	FirstDirectoryBlock * db = malloc(sizeof(FirstDirectoryBlock));
 	DiskDriver_readBlock(d->sfs->disk, db, d->dcb->fcb.block_in_disk);
 
 	// Per ogni file
-	//    Se è presente nel blocco corrente
-	//       Controllo se è il file che cerco e se è un file o una directory 
-	//			 Mi creo il file handle del file
-	//    Se non è presente nel blocco corrente
-	//       Entro nel blocco successivo
-
+	//    Se ho superato la dimensione del blocco corrente
+	//       Memorizzo le informazioni del blocco successivo
+	//    Memorizzo le informazioni del primo blocco del file
+	//    Se il nome corrisponde a quello da aprire, e non è una cartella
+	//       Memorizzo nel file_handle le informazioni di questo file
+	//       Restituisco il file
+	//    Altrimenti
+	//       Restituisco NULL
 	int i, j = 0;
 	for(i = 0; i < d->dcb->num_entries; i++, j++) {
 		if(j >= sizeof(db->file_blocks)) { 
@@ -226,24 +229,16 @@ FileHandle* SimpleFS_openFile(DirectoryHandle* d, const char* filename) {
 		}
 		FirstFileBlock * first_file_block = malloc(sizeof(FirstFileBlock));
 		DiskDriver_readBlock(d->sfs->disk, first_file_block, db->file_blocks[j]);
-
-		// Controllo se il file esiste
-		if(strcmp(first_file_block->fcb.name,filename)==0 && first_file_block->fcb.is_dir == 0){
-		
+		if(strcmp(first_file_block->fcb.name, filename) == 0 && first_file_block->fcb.is_dir == 0){
 			file_handle->sfs = d->sfs;
 			file_handle->fcb = first_file_block;
 			file_handle->directory = d->dcb;
 			file_handle->current_block = &(first_file_block->header);
-			file_handle->pos_in_file=0;
-
+			file_handle->pos_in_file = 0;
 			return file_handle;
-
-		}else{ //se non esiste restituisco null
-
-			return NULL;
-
 		}
 	}
+	return NULL;
 }
 
 // closes a file handle (destroyes it)
@@ -269,10 +264,39 @@ int SimpleFS_close(FileHandle* f) {
 int SimpleFS_write(FileHandle* f, void* data, int size) {
 }
 
-// writes in the file, at current position size bytes stored in data
-// overwriting and allocating new space if necessary
+// reads in the file, at current position size bytes stored in data
 // returns the number of bytes read
 int SimpleFS_read(FileHandle* f, void* data, int size) {
+	int bytes_read, bytes_read_in_block;
+	char char_read;
+
+	// Memorizzo il primo blocco del file da leggere
+	FirstFileBlock * file = malloc(sizeof(FirstFileBlock));
+	DiskDriver_readBlock(f->sfs->disk, file, f->fcb->fcb.block_in_disk);
+
+	// Memorizzo il numero massimo di byte da leggere
+	int max_bytes = file->fcb.size_in_bytes;
+
+	// Per ogni elemento presente in data
+	//    Se il numero di byte letti nel blocco è maggiore della dimensione dei suoi dati
+	//       Memorizzo le informazioni del blocco successivo
+	//       Azzero il numero di byte letti nel blocco
+	//    Leggo il carattere attuale
+	//    Lo aggiungo alla variabile da restituire
+	//    Incremento il numero di byte letti
+	// Restituisco il numero totale di byte letti nel blocco
+	for(bytes_read = 0; bytes_read < max_bytes; bytes_read++) {
+		if(bytes_read_in_block > sizeof(file->data)) {
+			FileBlock * file = malloc(sizeof(FileBlock));
+			DiskDriver_readBlock(f->sfs->disk, file, file->header.next_block);
+			bytes_read_in_block = 0;
+		}
+		char_read = file->data[bytes_read_in_block];
+		sprintf("%s%c", file->data, char_read);
+		bytes_read_in_block++;
+	}
+
+	return bytes_read;
 }
 
 // returns the number of bytes read (moving the current pointer to pos)
