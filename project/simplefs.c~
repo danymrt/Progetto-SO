@@ -309,26 +309,46 @@ int SimpleFS_seek(FileHandle* f, int pos) {
 // 0 on success, negative value on error
 // it does side effect on the provided handle
  int SimpleFS_changeDir(DirectoryHandle* d, char* dirname) {
-	/*
+
 	if(dirname == NULL){
 		return -1;	
 	}
 	
 	// Nel caso in cui dirname è ".." torno alla cartella genitore modificando Directory_Handle
 	if(strcmp(dirname,"..") == 0){
-		d->dcb = d->directory;
-		DiskDriver_readBlock(d->sfs->disk,d->directory,d->dcb->fcb.block_in_disk);
-		d->current_block = &(d->dcb->header);
-		return 0;
+		
+		//Se ci troviamo nella radice restituisco -1
+		if(strcmp(d->dcb->fcb.name,"/") == 0) return -1;
+		else{
+			d->dcb = d->directory;
+			DiskDriver_readBlock(d->sfs->disk, d->directory, d->dcb->fcb.block_in_disk);
+			d->current_block = &(d->dcb->header);
+			d->pos_in_dir = 0;
+			d->pos_in_block = d->directory->fcb.block_in_disk;
+	
+			return 0;
+		}
 	}else{ // Caso in cui dirname è diverso da ".."
+		// Controllo se già mi trovo nella cartella dirname
 		if(strcmp(dirname, d->dcb->fcb.name) == 0){
-			return 0;		
+			return -1;	
 		}else{
-					
+				// Controllo la directory esiste
+				//		In caso positivo mi ci sposto e modifico DirectoryHandle
+				// Se non esiste ritorno -1
+			 	int block = DirectoryExist(d,dirname);
+			 	if(block != -1){
+					DiskDriver_readBlock(d->sfs->disk, d->dcb, block);
+					d->directory = d->dcb;
+					d->current_block = &(d->dcb->header);
+					d->pos_in_dir = 0;
+					d->pos_in_block = block;
+					return 0;
+				}else{
+					return -1;			
+			}	
 		}
 	}
-	
-*/
 }
 
 int DirectoryExist(DirectoryHandle * d, char * dirname){

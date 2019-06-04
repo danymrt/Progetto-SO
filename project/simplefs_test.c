@@ -198,6 +198,12 @@ int main(int agc, char** argv) {
 		char data[size];
 //		printf("\n    SimpleFS_read(file_handle, data, %d) ha restituito: %d", size, SimpleFS_read(file_handle, data, size));
 
+		// Test SimpleFS_changeDir
+		printf("\n\n+++ Test SimpleFS_changeDir()");
+		printf("\n    La SimpleFS_changeDir() di %s ha restituito %d","..",SimpleFS_changeDir(dir_handle, ".."));
+		printf("\n    La SimpleFS_changeDir() di %s ha restituito %d","pluto",SimpleFS_changeDir(dir_handle, "pluto"));
+
+
 		printf("\n\n+++ Test SimpleFS_close()");
 		printf("\n\n+++ Test SimpleFS_seek()");
 		printf("\n\n+++ Test SimpleFS_remove()");
