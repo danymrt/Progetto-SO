@@ -194,12 +194,14 @@ int main(int agc, char** argv) {
 			printf("\n    Il file %s non esiste","prova.txt");		
 		}
 
-		//Test per vedere se il file è già presente
+		// Test per vedere se il file è già presente
 		if(SimpleFS_createFile(dir_handle,"prova_0.txt") != NULL)
 			printf("\n    File %s creato correttamente", "prova_0.txt");
 		else
 			printf("\n    Il file %s già esiste", "prova_0.txt");
 
+		// Test per vedere se la directory è gia presente
+		printf("\n    Il risultato della SimpleFS_mkDir(dh, \"pluto\") è: %d", SimpleFS_mkDir(dir_handle, "pluto"));
 
 		printf("\n\n+++ Test SimpleFS_write()");
 		printf("\n\n+++ Test SimpleFS_read()");

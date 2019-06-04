@@ -131,6 +131,9 @@ int SimpleFS_read(FileHandle* f, void* data, int size);
 // -1 on error (file too short)
 int SimpleFS_seek(FileHandle* f, int pos);
 
+//	Controlla se la cartella dirname già esiste in d
+int DirectoryExist(DirectoryHandle * d, char* dirname);
+
 // seeks for a directory in d. If dirname is equal to ".." it goes one level up
 // 0 on success, negative value on error
 // it does side effect on the provided handle
