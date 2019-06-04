@@ -206,7 +206,7 @@ int main(int agc, char** argv) {
 
 	 	// Test SimpleFS_write
 		printf("\n\n+++ Test SimpleFS_write()");
-		char stringa[22] = "Nel mezzo del cammin..";
+		char stringa[660] = "Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..";
 		ret = SimpleFS_write(file_handle, stringa, strlen(stringa));
 		printf("\n    SimpleFS_write(file_handle, \"%s\", %zu) => %d", stringa, strlen(stringa), ret);
 		if(ret == strlen(stringa)) {
@@ -220,22 +220,27 @@ int main(int agc, char** argv) {
 		printf("\n\n+++ Test SimpleFS_read()");
 		int size = file_handle->fcb->fcb.size_in_bytes;
 		char data[size];
-//		printf("\n    SimpleFS_read(file_handle, data, %d) ha restituito: %d", size, SimpleFS_read(file_handle, data, size));
+		printf("\n    SimpleFS_read(file_handle, data, %d) ha restituito: %d", size, SimpleFS_read(file_handle, data, size));
+		printf("\n    Adesso \"data\" contiene: %s", data);
+		printf("\n    In realtà, il primo blocco contiene: %s", file_handle->fcb->data);
 
 		// Test SimpleFS_changeDir
 		printf("\n\n+++ Test SimpleFS_changeDir()");
-		printf("\n    La SimpleFS_changeDir() di %s ha restituito %d","..",SimpleFS_changeDir(dir_handle, ".."));
-		printf("\n    La SimpleFS_changeDir() di %s ha restituito %d","pluto",SimpleFS_changeDir(dir_handle, "pluto"));
+		printf("\n    SimpleFS_changeDir(dir_handle, \"pluto\") => %d", SimpleFS_changeDir(dir_handle, "pluto"));
+		printf("\n    SimpleFS_changeDir(dir_handle, \"..\")    => %d", SimpleFS_changeDir(dir_handle, ".."));
+		printf("\n    SimpleFS_changeDir(dir_handle, \"..\")    => %d", SimpleFS_changeDir(dir_handle, ".."));
 
 		// Test SimpleFS_seek
 		printf("\n\n+++ Test SimpleFS_seek()");
-		printf("\n    La SimpleFS_seek() di %d ha restituito %d",10,SimpleFS_seek(file_handle, 10));
+		int pos = 10;
+		printf("\n    SimpleFS_seek(file_handle, %d) => %d", pos, SimpleFS_seek(file_handle, pos));
 		printf("\n    Il puntatore del file ora di trova in : %d", file_handle->pos_in_file);
 
 		// Test SimpleFS_close
 		printf("\n\n+++ Test SimpleFS_close()");
-		printf("\n    La SimpleFS_close() ha restituito %d",SimpleFS_close(file_handle));
+		printf("\n    SimpleFS_close(file_handle) => %d", SimpleFS_close(file_handle));
 
+		// Test SimpleFS_remove
 		printf("\n\n+++ Test SimpleFS_remove()");
 
 	}
