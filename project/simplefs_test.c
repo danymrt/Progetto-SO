@@ -248,7 +248,7 @@ int main(int agc, char** argv) {
 			printf("\n    Errore nello spostamento del cursore\n");
 			return;
 		}
-
+/*
 		// Test SimpleFS_close
 		printf("\n\n+++ Test SimpleFS_close()");
 		ret = SimpleFS_close(file_handle);
@@ -259,7 +259,8 @@ int main(int agc, char** argv) {
 			printf("\n    Errore nella chiusura del file\n");
 			return;
 		}
-		
+
+		*/
 		// Test SimpleFS_remove
 		printf("\n\n+++ Test SimpleFS_remove()");
 		ret = SimpleFS_remove(directory_handle, nome_file);
@@ -270,6 +271,8 @@ int main(int agc, char** argv) {
 			printf("\n    Errore nella cancellazione del file\n");
 			return;
 		}
+		printf("\n    BitMap attuale: ");
+		stampa_in_binario(disk.bitmap_data);
 
 	}
 	printf("\n\n");
