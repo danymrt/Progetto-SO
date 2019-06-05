@@ -250,6 +250,7 @@ int SimpleFS_close(FileHandle* f) {
 	free(f->fcb);
 	free(f->directory);
 	free(f);
+
 	return 0;
 
 }

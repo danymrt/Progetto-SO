@@ -527,6 +527,45 @@ int SimpleFS_mkDir(DirectoryHandle* d, char* dirname) {
 // removes the file in the current directory
 // returns -1 on failure 0 on success
 // if a directory, it removes recursively all contained files
-int SimpleFS_remove(SimpleFS* fs, char* filename) {
-	// TODO
+int SimpleFS_remove(DirectoryHandle* d, char* filename) {
+
+	int i,j,next,ret = -1;
+	FirstDirectoryBlock * dcb = malloc(sizeof(FirstDirectoryBlock));
+	dcb = d->dcb;
+	
+	//Controllo tra tutti i file della directory se c'è filename
+	//	Se lo trovo controllo se questo è un file o una directory
+	// 		Nel caso di un file elimino tutti i FileBlock
+	//  	Nel caso è una directory richiamo ricorsivamente la funzione remove
+	for(i=0; i < dcb->num_entries; i++){
+		FirstFileBlock * f = malloc(sizeof(FirstFileBlock));
+		DiskDriver_readBlock(d->sfs->disk, f, dcb->file_blocks[i]);
+		if(strcmp(f->fcb.name,filename) == 0){
+			if(f->fcb.is_dir == 0){
+				ret = DiskDriver_freeBlock(d->sfs->disk, f->fcb.block_in_disk);
+				while(f->header.next_block!=-1){
+					next = f->header.next_block;
+					ret = DiskDriver_freeBlock(d->sfs->disk, f->fcb.block_in_disk);
+					FileBlock * f = malloc(sizeof(FileBlock));
+					DiskDriver_readBlock(d->sfs->disk, f, next);
+				}
+		}else{
+			/* TODO
+			DirectoryHandle * dir_handle = malloc(sizeof(DirectoryHandle));
+			dir_handle->sfs = d->sfs;
+			dir_handle->dcb = (FirstDirectoryBlock*)f;
+			
+			if(f->fcb.directory_block != -1){
+				//DiskDriver_readBlock(d->sfs->disk, dir_handle->directory, f->fcb.directory_block);
+			}
+			else f->fcb.directory_block=-1;
+			
+			ret = SimpleFS_remove(dir_handle,filename);*/
+		}
+	 }
+	}
+		
+	if(ret == -1) return -1;
+	
+	return ret;
 }
