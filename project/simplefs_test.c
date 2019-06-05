@@ -196,7 +196,10 @@ int main(int agc, char** argv) {
 	 	// Test SimpleFS_openFile
 		printf("\n\n+++ Test SimpleFS_openFile()");
 		FileHandle * file_handle = malloc(sizeof(FileHandle));
-		file_handle = SimpleFS_openFile(dir_handle, "prova_1.txt");
+		char nome_file[255] = "prova_1.txt";
+		file_handle = SimpleFS_openFile(dir_handle, nome_file);
+		ret = file_handle != NULL ? 1 : 0;
+		printf("\n    SimpleFS_openFile(dir_handle, \"%s\") => %d", nome_file, ret);
 		if(file_handle != NULL) {
 			printf("\n    File aperto correttamente");
 		}else{
@@ -206,9 +209,13 @@ int main(int agc, char** argv) {
 
 	 	// Test SimpleFS_write
 		printf("\n\n+++ Test SimpleFS_write()");
+		printf("\n    BitMap prima: ");
+		stampa_in_binario(disk.bitmap_data);
 		char stringa[660] = "Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..";
 		ret = SimpleFS_write(file_handle, stringa, strlen(stringa));
 		printf("\n    SimpleFS_write(file_handle, \"%s\", %zu) => %d", stringa, strlen(stringa), ret);
+		printf("\n    BitMap dopo: ");
+		stampa_in_binario(disk.bitmap_data);
 		if(ret == strlen(stringa)) {
 			printf("\n    Scrittura avvenuta correttamente");
 		}else{
@@ -233,15 +240,32 @@ int main(int agc, char** argv) {
 		// Test SimpleFS_seek
 		printf("\n\n+++ Test SimpleFS_seek()");
 		int pos = 10;
-		printf("\n    SimpleFS_seek(file_handle, %d) => %d", pos, SimpleFS_seek(file_handle, pos));
-		printf("\n    Il puntatore del file ora di trova in : %d", file_handle->pos_in_file);
+		ret = SimpleFS_seek(file_handle, pos);
+		printf("\n    SimpleFS_seek(file_handle, %d) => %d", pos, ret);
+		if(ret == pos) {
+			printf("\n    Spostamento del cursore avvenuto correttamente");
+		}else{
+			printf("\n    Errore nello spostamento del cursore\n");
+		}
 
 		// Test SimpleFS_close
 		printf("\n\n+++ Test SimpleFS_close()");
-//		printf("\n    SimpleFS_close(file_handle) => %d", SimpleFS_close(file_handle));
+		ret = SimpleFS_close(file_handle);
+		printf("\n    SimpleFS_close(file_handle) => %d", ret);
+		if(ret >= 0) {
+			printf("\n    Chiusura del file avvenuta correttamente");
+		}else{
+			printf("\n    Errore nella chiusura del file\n");
+		}
 
 		// Test SimpleFS_remove
 		printf("\n\n+++ Test SimpleFS_remove()");
+		printf("\n    BitMap prima: ");
+		stampa_in_binario(disk.bitmap_data);
+		ret = SimpleFS_remove(dir_handle, nome_file);
+		printf("\n    SimpleFS_remove(dir_handle, \"%s\") => %d", nome_file, ret);
+		printf("\n    BitMap dopo: ");
+		stampa_in_binario(disk.bitmap_data);
 
 	}
 	printf("\n\n");
