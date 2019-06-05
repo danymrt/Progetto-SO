@@ -150,8 +150,8 @@ int main(int agc, char** argv) {
 			sprintf(disk_filename, "test/%d.txt", time(NULL));
 			DiskDriver_init(&disk, disk_filename, 15); 
 		}
-		DirectoryHandle * dir_handle = SimpleFS_init(&fs, &disk);
-		if(dir_handle != NULL) {
+		DirectoryHandle * directory_handle = SimpleFS_init(&fs, &disk);
+		if(directory_handle != NULL) {
 			printf("\n    File System creato e inizializzato correttamente");
 		}else{
 			printf("\n    Errore nella creazione del file system\n");
@@ -165,17 +165,19 @@ int main(int agc, char** argv) {
 		int i, num_file = 4;
 		for(i = 0; i < num_file; i++) {
 			char filename[255];
-			sprintf(filename, "prova_%d.txt", dir_handle->dcb->num_entries);
-			if(SimpleFS_createFile(dir_handle,filename) != NULL) {
+			sprintf(filename, "prova_%d.txt", directory_handle->dcb->num_entries);
+			if(SimpleFS_createFile(directory_handle,filename) != NULL) {
 				printf("\n    File %s creato correttamente", filename);
 			}else{
 				printf("\n    Errore nella creazione di %s", filename);
 			}
 		}
+		printf("\n    BitMap attuale: ");
+		stampa_in_binario(disk.bitmap_data);
 
 	 	// Test SimpleFS_mkDir
 		printf("\n\n+++ Test SimpleFS_mkDir()");
-		int ret = SimpleFS_mkDir(dir_handle, "pluto");
+		int ret = SimpleFS_mkDir(directory_handle, "pluto");
 		printf("\n    SimpleFS_mkDir(dh, \"pluto\") => %d", ret);
 		if(ret == 0) {
 			printf("\n    Cartella creata correttamente");
@@ -183,20 +185,25 @@ int main(int agc, char** argv) {
 			printf("\n    Errore nella creazione della cartella\n");
 			return;
 		}
+		printf("\n    BitMap attuale: ");
+		stampa_in_binario(disk.bitmap_data);
 
 	 	// Test SimpleFS_readDir
 		printf("\n\n+++ Test SimpleFS_readDir()");
-		printf("\n    Nella cartella ci sono %d elementi:", dir_handle->dcb->num_entries);
-		char ** elenco2 = malloc(dir_handle->dcb->num_entries * 255);
-		SimpleFS_readDir(elenco2, dir_handle);
-		for(i = 0; i < dir_handle->dcb->num_entries; i++) {
+		printf("\n    Nella cartella ci sono %d elementi:", directory_handle->dcb->num_entries);
+		char ** elenco2 = malloc(directory_handle->dcb->num_entries * 255);
+		SimpleFS_readDir(elenco2, directory_handle);
+		for(i = 0; i < directory_handle->dcb->num_entries; i++) {
 			printf("\n    > %s", elenco2[i]);
 		}
 
 	 	// Test SimpleFS_openFile
 		printf("\n\n+++ Test SimpleFS_openFile()");
+		char nome_file[255] = "prova_1.txt";
 		FileHandle * file_handle = malloc(sizeof(FileHandle));
-		file_handle = SimpleFS_openFile(dir_handle, "prova_1.txt");
+		file_handle = SimpleFS_openFile(directory_handle, nome_file);
+		ret = file_handle == NULL ? -1 : 0;
+		printf("\n    SimpleFS_openFile(directory_handle, \"%s\") => %d", nome_file, ret);
 		if(file_handle != NULL) {
 			printf("\n    File aperto correttamente");
 		}else{
@@ -226,22 +233,43 @@ int main(int agc, char** argv) {
 
 		// Test SimpleFS_changeDir
 		printf("\n\n+++ Test SimpleFS_changeDir()");
-		printf("\n    SimpleFS_changeDir(dir_handle, \"pluto\") => %d", SimpleFS_changeDir(dir_handle, "pluto"));
-		printf("\n    SimpleFS_changeDir(dir_handle, \"..\")    => %d", SimpleFS_changeDir(dir_handle, ".."));
-		printf("\n    SimpleFS_changeDir(dir_handle, \"..\")    => %d", SimpleFS_changeDir(dir_handle, ".."));
+		printf("\n    SimpleFS_changeDir(directory_handle, \"pluto\") => %d", SimpleFS_changeDir(directory_handle, "pluto"));
+		printf("\n    SimpleFS_changeDir(directory_handle, \"..\")    => %d", SimpleFS_changeDir(directory_handle, ".."));
+		printf("\n    SimpleFS_changeDir(directory_handle, \"..\")    => %d", SimpleFS_changeDir(directory_handle, ".."));
 
 		// Test SimpleFS_seek
 		printf("\n\n+++ Test SimpleFS_seek()");
 		int pos = 10;
-		printf("\n    SimpleFS_seek(file_handle, %d) => %d", pos, SimpleFS_seek(file_handle, pos));
-		printf("\n    Il puntatore del file ora di trova in : %d", file_handle->pos_in_file);
+		ret = SimpleFS_seek(file_handle, pos);
+		printf("\n    SimpleFS_seek(file_handle, %d) => %d", pos, ret);
+		if(ret == pos) {
+			printf("\n    Spostamento del cursore avvenuto correttamente");
+		}else{
+			printf("\n    Errore nello spostamento del cursore\n");
+			return;
+		}
 
 		// Test SimpleFS_close
 		printf("\n\n+++ Test SimpleFS_close()");
-//		printf("\n    SimpleFS_close(file_handle) => %d", SimpleFS_close(file_handle));
-
+		ret = SimpleFS_close(file_handle);
+		printf("\n    SimpleFS_close(file_handle) => %d", ret);
+		if(ret >= 0) {
+			printf("\n    Chiusura del file avvenuta correttamente");
+		}else{
+			printf("\n    Errore nella chiusura del file\n");
+			return;
+		}
+		
 		// Test SimpleFS_remove
 		printf("\n\n+++ Test SimpleFS_remove()");
+		ret = SimpleFS_remove(directory_handle, nome_file);
+		printf("\n    SimpleFS_remove(file_handle, \"%s\") => %d", nome_file, ret);
+		if(ret >= 0) {
+			printf("\n    Cancellazione del file avvenuta correttamente");
+		}else{
+			printf("\n    Errore nella cancellazione del file\n");
+			return;
+		}
 
 	}
 	printf("\n\n");

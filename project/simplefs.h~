@@ -124,7 +124,7 @@ int SimpleFS_write(FileHandle* f, void* data, int size);
 // writes in the file, at current position size bytes stored in data
 // overwriting and allocating new space if necessary
 // returns the number of bytes read
-int SimpleFS_read(FileHandle* f, void* data, int size);
+int SimpleFS_read(FileHandle* f, char* data, int size);
 
 // returns the number of bytes read (moving the current pointer to pos)
 // returns pos on success
@@ -147,4 +147,4 @@ int SimpleFS_mkDir(DirectoryHandle* d, char* dirname);
 // removes the file in the current directory
 // returns -1 on failure 0 on success
 // if a directory, it removes recursively all contained files
-int SimpleFS_remove(SimpleFS* fs, char* filename);
+int SimpleFS_remove(DirectoryBlock* d, char* filename);

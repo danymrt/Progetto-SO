@@ -246,9 +246,6 @@ int SimpleFS_close(FileHandle* f) {
 
 	if(f == NULL) return -1;
 
-	// Mi dealloco tutte le strutture prima di distruggere completamente il File Handle
-	free(f->fcb);
-	free(f->directory);
 	free(f);
 
 	return 0;
