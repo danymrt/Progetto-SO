@@ -148,7 +148,7 @@ int main(int agc, char** argv) {
 		}else{
 			char disk_filename[255];
 			sprintf(disk_filename, "test/%d.txt", time(NULL));
-			DiskDriver_init(&disk, disk_filename, 15); 
+			DiskDriver_init(&disk, disk_filename, 30); 
 		}
 		DirectoryHandle * directory_handle = SimpleFS_init(&fs, &disk);
 		if(directory_handle != NULL) {
@@ -241,7 +241,7 @@ int main(int agc, char** argv) {
 		printf("\n\n+++ Test SimpleFS_changeDir()");
 		printf("\n    SimpleFS_changeDir(directory_handle, \"pluto\") => %d", SimpleFS_changeDir(directory_handle, "pluto"));
 		printf("\n    SimpleFS_changeDir(directory_handle, \"..\")    => %d", SimpleFS_changeDir(directory_handle, ".."));
-//		printf("\n    SimpleFS_changeDir(directory_handle, \"..\")    => %d", SimpleFS_changeDir(directory_handle, ".."));
+		printf("\n    SimpleFS_changeDir(directory_handle, \"..\")    => %d", SimpleFS_changeDir(directory_handle, ".."));
 
 		// Test SimpleFS_seek
 		printf("\n\n+++ Test SimpleFS_seek()");
@@ -265,16 +265,17 @@ int main(int agc, char** argv) {
 			printf("\n    Errore nella chiusura del file\n");
 			return;
 		}
-
-		strcpy(nome_file, "pluto");
-		printf("\n\n    BitMap: ");
-		stampa_in_binario(disk.bitmap_data);
-		if(SimpleFS_createFile(directory_handle, "file_pluto.txt") != NULL) {
-			printf("\n    File %s creato correttamente", "file_pluto.txt");
-		}else{
-			printf("\n    Errore nella creazione di %s", "file_pluto.txt");
+		
+		SimpleFS_changeDir(directory_handle, "pluto");
+		for(i=0; i<500; i++) {
+			char nomello[255];
+			sprintf(nomello, "%s%d%s", "pluto_", i, ".txt");
+			SimpleFS_createFile(directory_handle, nomello);
 		}
-		printf("\n    BitMap: ");
+		printf("\n\nHo aggiunto %d files in \"pluto\"", directory_handle->dcb->num_entries);
+		SimpleFS_changeDir(directory_handle, "..");
+		strcpy(nome_file, "pluto");
+		printf("\n    BitMap => ");
 		stampa_in_binario(disk.bitmap_data);
 
 		// Test SimpleFS_remove
@@ -287,7 +288,7 @@ int main(int agc, char** argv) {
 			printf("\n    Errore nella cancellazione del file\n");
 			return;
 		}
-		printf("\n    BitMap attuale: ");
+		printf("\n    BitMap => ");
 		stampa_in_binario(disk.bitmap_data);
 	}
 	printf("\n\n");
