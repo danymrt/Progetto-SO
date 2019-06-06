@@ -241,7 +241,7 @@ int main(int agc, char** argv) {
 		printf("\n\n+++ Test SimpleFS_changeDir()");
 		printf("\n    SimpleFS_changeDir(directory_handle, \"pluto\") => %d", SimpleFS_changeDir(directory_handle, "pluto"));
 		printf("\n    SimpleFS_changeDir(directory_handle, \"..\")    => %d", SimpleFS_changeDir(directory_handle, ".."));
-		printf("\n    SimpleFS_changeDir(directory_handle, \"..\")    => %d", SimpleFS_changeDir(directory_handle, ".."));
+//		printf("\n    SimpleFS_changeDir(directory_handle, \"..\")    => %d", SimpleFS_changeDir(directory_handle, ".."));
 
 		// Test SimpleFS_seek
 		printf("\n\n+++ Test SimpleFS_seek()");
@@ -266,9 +266,16 @@ int main(int agc, char** argv) {
 			return;
 		}
 
-		file_handle = SimpleFS_openFile(directory_handle, nome_file);
-		FirstFileBlock * ffb = malloc(sizeof(FirstFileBlock));
-		DiskDriver_readBlock(file_handle->sfs->disk, ffb, file_handle->fcb->fcb.block_in_disk);
+		strcpy(nome_file, "pluto");
+		printf("\n\n    BitMap: ");
+		stampa_in_binario(disk.bitmap_data);
+		if(SimpleFS_createFile(directory_handle, "file_pluto.txt") != NULL) {
+			printf("\n    File %s creato correttamente", "file_pluto.txt");
+		}else{
+			printf("\n    Errore nella creazione di %s", "file_pluto.txt");
+		}
+		printf("\n    BitMap: ");
+		stampa_in_binario(disk.bitmap_data);
 
 		// Test SimpleFS_remove
 		printf("\n\n+++ Test SimpleFS_remove()");
