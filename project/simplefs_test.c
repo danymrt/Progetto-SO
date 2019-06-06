@@ -157,7 +157,7 @@ int main(int agc, char** argv) {
 			printf("\n    Errore nella creazione del file system\n");
 			return;
 		}
-		printf("\n    BitMap attuale: ");
+		printf("\n    BitMap: ");
 		stampa_in_binario(disk.bitmap_data);
 
 		// Test SimpleFS_createFile
@@ -172,11 +172,13 @@ int main(int agc, char** argv) {
 				printf("\n    Errore nella creazione di %s", filename);
 			}
 		}
-		printf("\n    BitMap attuale: ");
+		printf("\n    BitMap: ");
 		stampa_in_binario(disk.bitmap_data);
 
 	 	// Test SimpleFS_mkDir
 		printf("\n\n+++ Test SimpleFS_mkDir()");
+		printf("\n    BitMap: ");
+		stampa_in_binario(disk.bitmap_data);
 		int ret = SimpleFS_mkDir(directory_handle, "pluto");
 		printf("\n    SimpleFS_mkDir(dh, \"pluto\") => %d", ret);
 		if(ret == 0) {
@@ -185,7 +187,7 @@ int main(int agc, char** argv) {
 			printf("\n    Errore nella creazione della cartella\n");
 			return;
 		}
-		printf("\n    BitMap attuale: ");
+		printf("\n    BitMap: ");
 		stampa_in_binario(disk.bitmap_data);
 
 	 	// Test SimpleFS_readDir
@@ -213,15 +215,19 @@ int main(int agc, char** argv) {
 
 	 	// Test SimpleFS_write
 		printf("\n\n+++ Test SimpleFS_write()");
-		char stringa[660] = "Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..Nel mezzo del cammin..";
+		printf("\n    BitMap: ");
+		stampa_in_binario(disk.bitmap_data);
+		char stringa[1200];
+		strcpy(stringa, "Nel mezzo del cammin di nostra vita mi ritrovai per una selva oscura ché la diritta via era smarrita. Ahi quanto a dir qual era è cosa dura esta selva selvaggia e aspra e forte che nel pensier rinova la paura! Tant'è amara che poco è più morte; ma per trattar del ben ch'i' vi trovai, dirò de l'altre cose ch'i' v'ho scorte. Io non so ben ridir com'i' v'intrai, tant'era pien di sonno a quel punto che la verace via abbandonai. Ma poi ch'i' fui al piè d'un colle giunto, là dove terminava quella valle che m'avea di paura il cor compunto, guardai in alto, e vidi le sue spalle vestite già deNel mezzo del cammin di nostra vita mi ritrovai per una selva oscura ché la diritta via era smarrita. Ahi quanto a dir qual era è cosa dura esta selva selvaggia e aspra e forte che nel pensier rinova la paura! Tant'è amara che poco è più morte; ma per trattar del ben ch'i' vi trovai, dirò de l'altre cose ch'i' v'ho scorte. Io non so ben ridir com'i' v'intrai, tant'era pien di sonno a quel punto che la verace via abbandonai. Ma poi ch'i' fui al piè d'un colle giunto, là dove terminava quella valle che m'avea di paura il cor compunto, guardai in alto, e vidi le sue spalle vestite già d");
 		ret = SimpleFS_write(file_handle, stringa, strlen(stringa));
-		printf("\n    SimpleFS_write(file_handle, \"%s\", %zu) => %d", stringa, strlen(stringa), ret);
+		printf("\n    SimpleFS_write(file_handle, stringa, %zu) => %d", strlen(stringa), ret);
 		if(ret == strlen(stringa)) {
 			printf("\n    Scrittura avvenuta correttamente");
 		}else{
 			printf("\n    Errore nella scrittura del file\n");
-			return;
 		}
+		printf("\n    BitMap: ");
+		stampa_in_binario(disk.bitmap_data);
 
 	 	// Test SimpleFS_read
 		printf("\n\n+++ Test SimpleFS_read()");
@@ -248,7 +254,7 @@ int main(int agc, char** argv) {
 			printf("\n    Errore nello spostamento del cursore\n");
 			return;
 		}
-/*
+
 		// Test SimpleFS_close
 		printf("\n\n+++ Test SimpleFS_close()");
 		ret = SimpleFS_close(file_handle);
@@ -260,7 +266,10 @@ int main(int agc, char** argv) {
 			return;
 		}
 
-		*/
+		file_handle = SimpleFS_openFile(directory_handle, nome_file);
+		FirstFileBlock * ffb = malloc(sizeof(FirstFileBlock));
+		DiskDriver_readBlock(file_handle->sfs->disk, ffb, file_handle->fcb->fcb.block_in_disk);
+
 		// Test SimpleFS_remove
 		printf("\n\n+++ Test SimpleFS_remove()");
 		ret = SimpleFS_remove(directory_handle, nome_file);
@@ -273,7 +282,6 @@ int main(int agc, char** argv) {
 		}
 		printf("\n    BitMap attuale: ");
 		stampa_in_binario(disk.bitmap_data);
-
 	}
 	printf("\n\n");
 }

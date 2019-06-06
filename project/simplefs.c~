@@ -243,9 +243,7 @@ FileHandle* SimpleFS_openFile(DirectoryHandle* d, const char* filename) {
 
 // closes a file handle (destroyes it)
 int SimpleFS_close(FileHandle* f) {
-
 	if(f == NULL) return -1;
-
 	free(f);
 
 	return 0;
@@ -256,52 +254,63 @@ int SimpleFS_close(FileHandle* f) {
 // overwriting and allocating new space if necessary
 // returns the number of bytes written
 int SimpleFS_write(FileHandle* f, void* data, int size) {
-	int i = 0, bytes_written = 0, bytes_to_write, current_block, written_byte = 0, num_blocks_written = 1;
+	int written_bytes = 0, written_blocks = 0;
+	if(size < sizeof(f->fcb->data)) {
+		memcpy(f->fcb->data, data, strlen(data));
+		DiskDriver_writeBlock(f->sfs->disk, f->fcb, f->fcb->fcb.block_in_disk);
+		written_bytes = strlen(data);
+		written_blocks++;
+	}else{
+		int dim, current_block;
+		char * copy = malloc(strlen(data));
+		strcpy(copy, data);
+		int previous_block = f->fcb->fcb.block_in_disk;
+		int next_block = f->fcb->header.next_block;
+		int previous_index = f->fcb->header.block_in_file;
 
-	// Memorizzo le informazioni del primo blocco del file
-	FirstFileBlock * file = malloc(sizeof(FirstFileBlock));
-	current_block = f->fcb->fcb.block_in_disk;
-	file = f->fcb;
-	
-	// Creo una copia della stringa da scrivere
-	char * copy = malloc(strlen(data));
-	strcpy(copy, data);
+		dim = sizeof(f->fcb->data);
+		memcpy(f->fcb->data, copy, dim);
+		DiskDriver_writeBlock(f->sfs->disk, f->fcb, f->fcb->fcb.block_in_disk);
+		copy += dim;
+		written_bytes += dim;
+		written_blocks++;
 
-	while(written_byte < size) {
-		if(strlen(copy) < sizeof(file->data)) {
-			sprintf(file->data, "%s%s", file->data, copy);
-			written_byte += strlen(copy);
-		}else{
-			int dim = sizeof(file->data)-1;
-			char part[dim];
-			strncpy(part, copy, dim);
-			sprintf(file->data, "%s%s", file->data, part);
-			copy += dim;
-			written_byte += dim;
-			num_blocks_written++;
-			if(file->header.next_block != -1) {
-				current_block = file->header.next_block;
-				FileBlock * file = malloc(sizeof(FileBlock));
-				DiskDriver_readBlock(f->sfs->disk, file, file->header.next_block);
+		FileBlock * file = malloc(sizeof(FileBlock));
+		dim = strlen(copy) > sizeof(file->data) ? sizeof(file->data) : strlen(copy);
+		while(dim != 0) {
+			if(next_block != -1) {
+				// Ce se pensa
 			}else{
-				int next_block = DiskDriver_getFreeBlock(f->sfs->disk, 0);
+				current_block = DiskDriver_getFreeBlock(f->sfs->disk, 0);
+				if(previous_index == 0) {
+					f->fcb->header.next_block = current_block;
+					DiskDriver_writeBlock(f->sfs->disk, f->fcb, f->fcb->fcb.block_in_disk);
+				}else{
+					FileBlock * fb = malloc(sizeof(FileBlock));
+					DiskDriver_readBlock(f->sfs->disk, fb, previous_block);
+					fb->header.next_block = current_block;
+					DiskDriver_writeBlock(f->sfs->disk, fb, previous_block);
+				}
+				file->header.previous_block = previous_block;
+				next_block = -1;
 				file->header.next_block = next_block;
-				int next_index = file->header.block_in_file + 1;
-				FileBlock * file = malloc(sizeof(FileBlock));
-				file->header.previous_block = current_block;
-				file->header.next_block = -1;
-				file->header.block_in_file = next_index;
-				strcpy(file->data, "\0");
-				DiskDriver_writeBlock(f->sfs->disk, file, next_block);
-				current_block = next_block;
+				previous_index += 1;
+				file->header.block_in_file = previous_index;
+				memset(file->data, '\0', sizeof(file->data));
+				memcpy(file->data, copy, dim);
+				copy += dim;
+				written_bytes += dim;
+				DiskDriver_writeBlock(f->sfs->disk, file, current_block);
+				previous_block = current_block;
 			}
+			dim = strlen(copy) > sizeof(file->data) ? sizeof(file->data) : strlen(copy);
+			written_blocks++;
 		}
 	}
-
-	f->fcb->fcb.size_in_bytes = written_byte;
-	f->fcb->fcb.size_in_blocks = num_blocks_written;
-
-	return written_byte;
+	f->fcb->fcb.size_in_bytes = written_bytes;
+	f->fcb->fcb.size_in_blocks = written_blocks;
+	DiskDriver_writeBlock(f->sfs->disk, f->fcb, f->fcb->fcb.block_in_disk);
+	return written_bytes;
 }
 
 // reads in the file, at current position size bytes stored in data
@@ -309,29 +318,21 @@ int SimpleFS_write(FileHandle* f, void* data, int size) {
 int SimpleFS_read(FileHandle* f, char* data, int size) {
 
 	// Memorizzo il primo blocco del file da leggere
-	FirstFileBlock * file = malloc(sizeof(FirstFileBlock));
-	file = f->fcb;
+	FirstFileBlock * ffb = malloc(sizeof(FirstFileBlock));
+	ffb = f->fcb;
+	int next_block = f->fcb->header.next_block;
 
 	// Formatto la stringa da restituire
-	strcpy(data, "");
-
-	// Fino a quando non avrò letto tutti i byte richiesti
-	//    Se devo leggere meno byte di quelli a disposizione nel blocco
-	//       Leggo solamente quelli di cui ho bisogno
-	//       Li inserisco nella stringa da restituire
-	//    Altrimenti
-	//       Inserisco tutti i byte a disposizione dentro la stringa
-	//       Memorizzo le informazioni del blocco successivo
-
-	while(strlen(data) < size) {
-		if(size < strlen(file->data)) {
-			char part[size];
-			strncpy(part, file->data, size);
-			sprintf(data, "%s%s", data, part);
-		}else{
+	memset(data, '\0', size);
+	if(size < strlen(ffb->data)) {
+		strcpy(data, ffb->data);
+	}else{
+		strcpy(data, ffb->data);
+		FileBlock * file = malloc(sizeof(FileBlock));
+		while(strlen(data) < size && next_block != -1) {
+			DiskDriver_readBlock(f->sfs->disk, file, next_block);
 			sprintf(data, "%s%s", data, file->data);
-			FileBlock * file = malloc(sizeof(FileBlock));
-			DiskDriver_readBlock(f->sfs->disk, file, file->header.next_block);
+			next_block = file->header.next_block;
 		}
 	}
 
@@ -525,64 +526,37 @@ int SimpleFS_mkDir(DirectoryHandle* d, char* dirname) {
 // returns -1 on failure 0 on success
 // if a directory, it removes recursively all contained files
 int SimpleFS_remove(DirectoryHandle* d, char* filename) {
+	int current_block, next_block;
 
-	int i, j, next, ret = -1, previous_block, current_block;
-	FirstDirectoryBlock * dcb = malloc(sizeof(FirstDirectoryBlock));
-	dcb = d->dcb;
-	
-	//Controllo tra tutti i file della directory se c'è filename
-	//	Se lo trovo controllo se questo è un file o una directory
-	// 		Nel caso di un file elimino tutti i FileBlock
-	//  	Nel caso è una directory richiamo ricorsivamente la funzione remove
+	// TODO: gestire il caso in cui si tratti di una cartella
+	// TODO: Se viene cancellato un file e la sua cartella genitore aveva solo quel figlio, cancellare anche la cartella genitore e aggiornare i blocchi precedenti e successivi della stessa cartella
 
-	FirstFileBlock * f = malloc(sizeof(FirstFileBlock));
-	for(i = 0, j = 0; i < dcb->num_entries; i++, j++){
-		if(j >= sizeof(dcb->file_blocks)) { 
-			DirectoryBlock * dcb;
-			j = j - sizeof(dcb->file_blocks);
-			DiskDriver_readBlock(d->sfs->disk, dcb, dcb->header.next_block);
-		}
-		DiskDriver_readBlock(d->sfs->disk, f, dcb->file_blocks[i]);
-		current_block = dcb->file_blocks[i];
-		printf("\n%s è %s?", f->fcb.name, filename);
-		if(strcmp(f->fcb.name, filename) == 0){
-			printf("\n  Si!");
-			if(f->fcb.is_dir == 0){
-				BlockHeader header = f->header;
-				printf("\n      previous: %d, next: %d, index: %d", header.previous_block, header.next_block, header.block_in_file);
-				if(header.next_block != -1) {
-					printf("\n      Il file ha più di un blocco");
-					while(f->header.next_block != -1){
-						FileBlock * f = malloc(sizeof(FileBlock));
-						current_block = f->header.next_block;
-						DiskDriver_readBlock(d->sfs->disk, f, current_block);
-					}
-					// In questo punto abbiamo, dentro "f", l'ultimo blocco del file
-					while(f->header.previous_block != -1) {
-						previous_block = f->header.previous_block;
-						DiskDriver_freeBlock(d->sfs->disk, current_block);
-						DiskDriver_readBlock(d->sfs->disk, f, previous_block);
-						current_block = previous_block;
-					}
-				}else{
-					printf("\n      Il file ha un solo blocco");
+	FileHandle * file_handle = malloc(sizeof(FileHandle));
+	file_handle = SimpleFS_openFile(d, filename);
 
-					DiskDriver_freeBlock(d->sfs->disk, current_block);
-				}
-			}else{
-				/* TODO
-				DirectoryHandle * dir_handle = malloc(sizeof(DirectoryHandle));
-				dir_handle->sfs = d->sfs;
-				dir_handle->dcb = (FirstDirectoryBlock*)f;
-				if(f->fcb.directory_block != -1){
-					//DiskDriver_readBlock(d->sfs->disk, dir_handle->directory, f->fcb.directory_block);
-				}
-				else f->fcb.directory_block=-1;
-				ret = SimpleFS_remove(dir_handle,filename);*/
-			}
+	// Se il file esiste
+	if(file_handle != NULL) {
+
+		// Memorizzo le informazioni del primo blocco del file
+		FirstFileBlock * file = malloc(sizeof(FirstFileBlock));
+		file = file_handle->fcb;
+		current_block = file_handle->fcb->fcb.block_in_disk;
+
+		// Se il file ha un blocco successivo
+		if(file_handle->fcb->header.next_block != -1) {
+
+			// Fino a quanto ha blocchi successivi, cancello i suoi blocchi
+			do {
+				next_block = file->header.next_block;
+				DiskDriver_freeBlock(d->sfs->disk, current_block);
+				if(next_block != -1) DiskDriver_readBlock(d->sfs->disk, file, next_block);
+				current_block = next_block;
+			} while(next_block != -1);
 			return 0;
+		}else{
+				DiskDriver_freeBlock(d->sfs->disk, current_block);
 		}
 	}
-	
+
 	return -1;
 }
