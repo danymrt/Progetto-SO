@@ -10,6 +10,8 @@
 // returns a handle to the top level directory stored in the first block
 DirectoryHandle* SimpleFS_init(SimpleFS* fs, DiskDriver* disk) {
 
+	if(fs == NULL || disk == NULL) return NULL;
+
 	// Interpreto il disco passato in parametro come disco principale del FileSystem
 	fs->disk = disk;
 	DirectoryHandle * directory_handle = malloc(sizeof(DirectoryHandle));	
@@ -54,6 +56,8 @@ DirectoryHandle* SimpleFS_init(SimpleFS* fs, DiskDriver* disk) {
 // and set to the top level directory
 void SimpleFS_format(SimpleFS* fs) {
 
+	if(fs == NULL) return;
+
 	// Azzero la BitMap di tutto il disco
 	int i;
 	BitMap bitmap;
@@ -93,16 +97,16 @@ void SimpleFS_format(SimpleFS* fs) {
 // an empty file consists only of a block of type FirstBlock
 FileHandle* SimpleFS_createFile(DirectoryHandle* d, const char* filename) {
 
-	// TODO: Se esiste già un file con lo stesso nome, dentro la stessa cartella, restituisco -1
+	// Se uno dei parametri è vuoto, esco senza fare nulla
+	if(d == NULL || filename == NULL) return NULL;
+
+	// Se esiste già un file con lo stesso nome, restituisco errore
+	if(SimpleFS_openFile(d, filename) != NULL) return NULL;
 
 	// Se non ci sono blocchi liberi per creare il file, restituisco errore
-	if(d->sfs->disk->header->free_blocks < 1){
-		return NULL; 
-	}
+	if(d->sfs->disk->header->free_blocks < 1) return NULL; 
 	
-	if(SimpleFS_openFile(d, filename) != NULL) {
-		return NULL;
-	}
+	if(SimpleFS_openFile(d, filename) != NULL) return NULL;
 
 	// Creo il FileHandle e inserisco le informazioni relative
 	FileHandle * file_handle = malloc(sizeof(FileHandle));
@@ -179,8 +183,12 @@ FileHandle* SimpleFS_createFile(DirectoryHandle* d, const char* filename) {
 
 // reads in the (preallocated) blocks array, the name of all files in a directory
 int SimpleFS_readDir(char** names, DirectoryHandle* d) {
+
+	// Se uno dei parametri è vuoto, esco senza fare nulla
+	if(names == NULL || d == NULL) return -1;
+
 	FirstDirectoryBlock * db = malloc(sizeof(FirstDirectoryBlock));
-	DiskDriver_readBlock(d->sfs->disk, db, d->dcb->fcb.block_in_disk);
+	db = d->dcb;
 
 	// Per ogni file
 	//    Se è presente nel blocco corrente
@@ -206,10 +214,13 @@ int SimpleFS_readDir(char** names, DirectoryHandle* d) {
 // opens a file in the  directory d. The file should be exisiting
 FileHandle* SimpleFS_openFile(DirectoryHandle* d, const char* filename) {
 
+	// Se uno dei parametri è vuoto, esco senza fare nulla
+	if(d == NULL || filename == NULL) return NULL;
+
 	// Memorizzo le informazioni della cartella
 	FileHandle * file_handle = malloc(sizeof(FileHandle));
 	FirstDirectoryBlock * db = malloc(sizeof(FirstDirectoryBlock));
-	DiskDriver_readBlock(d->sfs->disk, db, d->dcb->fcb.block_in_disk);
+	db = d->dcb;
 
 	// Per ogni file
 	//    Se ho superato la dimensione del blocco corrente
@@ -243,11 +254,15 @@ FileHandle* SimpleFS_openFile(DirectoryHandle* d, const char* filename) {
 
 // closes a file handle (destroyes it)
 int SimpleFS_close(FileHandle* f) {
+
+	// Se il parametro è vuoto, esco senza fare nulla
 	if(f == NULL) return -1;
+
+	// Libero tutto lo spazio occupato dal FileHandle
 	free(f);
 
+	// Esco dalla funzione
 	return 0;
-
 }
 
 // writes in the file, at current position for size bytes stored in data
@@ -255,6 +270,10 @@ int SimpleFS_close(FileHandle* f) {
 // returns the number of bytes written
 // TODO: Fare in modo che la scrittura inizi da pos, e non dall'inizio
 int SimpleFS_write(FileHandle* f, void* data, int size) {
+
+	// Se uno dei parametri è vuoto, esco senza fare nulla
+	if(f == NULL || data == NULL || size < 0) return -1;
+
 	int written_bytes = 0, written_blocks = 0;
 	if(size < sizeof(f->fcb->data)) {
 		memcpy(f->fcb->data, data, strlen(data));
@@ -326,6 +345,9 @@ int SimpleFS_write(FileHandle* f, void* data, int size) {
 // returns the number of bytes read
 int SimpleFS_read(FileHandle* f, char* data, int size) {
 
+	// Se uno dei parametri è vuoto, esco senza fare nulla
+	if(f == NULL || data == NULL || size < 0) return -1;
+
 	// Memorizzo il primo blocco del file da leggere
 	FirstFileBlock * ffb = malloc(sizeof(FirstFileBlock));
 	ffb = f->fcb;
@@ -353,6 +375,9 @@ int SimpleFS_read(FileHandle* f, char* data, int size) {
 // returns pos on success
 // -1 on error (file too short)
 int SimpleFS_seek(FileHandle* f, int pos) {
+
+	// Se uno dei parametri è vuoto, esco senza fare nulla
+	if(f == NULL || pos < 0) return -1;
 
 	int dim = 0;
 
@@ -387,10 +412,9 @@ int SimpleFS_seek(FileHandle* f, int pos) {
 // it does side effect on the provided handle
 int SimpleFS_changeDir(DirectoryHandle* d, char* dirname) {
 
-	if(dirname == NULL){
-		return -1;	
-	}
-	
+	// Se uno dei parametri è vuoto, esco senza fare nulla
+	if(d == NULL || dirname == NULL) return -1;
+
 	// Nel caso in cui dirname è ".." torno alla cartella genitore modificando Directory_Handle
 	if(strcmp(dirname,"..") == 0){
 		
@@ -429,6 +453,10 @@ int SimpleFS_changeDir(DirectoryHandle* d, char* dirname) {
 }
 
 int DirectoryExist(DirectoryHandle * d, char * dirname){
+
+	// Se uno dei parametri è vuoto, esco senza fare nulla
+	if(d == NULL || dirname == NULL) return -1;
+
 	// Se esiste già una cartella con lo stesso nome, restituisco -1
 	int i, j;
 	FirstDirectoryBlock * db = malloc(sizeof(FirstDirectoryBlock));
@@ -455,6 +483,9 @@ int DirectoryExist(DirectoryHandle * d, char * dirname){
 // 0 on success
 // -1 on error
 int SimpleFS_mkDir(DirectoryHandle* d, char* dirname) {
+
+	// Se uno dei parametri è vuoto, esco senza fare nulla
+	if(d == NULL || dirname == NULL) return -1;
 
 	// Se non ci sono blocchi liberi per creare il file, restituisco errore
 	if(d->sfs->disk->header->free_blocks < 1){
@@ -536,6 +567,10 @@ int SimpleFS_mkDir(DirectoryHandle* d, char* dirname) {
 // returns -1 on failure 0 on success
 // if a directory, it removes recursively all contained files
 int SimpleFS_remove(DirectoryHandle* d, char* filename) {
+
+	// Se uno dei parametri è vuoto, esco senza fare nulla
+	if(d == NULL || filename == NULL) return -1;
+
 	int current_block, next_block, i, j;
 // TODO: Impossibile verificare questo if
 	// Se la cartella un blocco successivo

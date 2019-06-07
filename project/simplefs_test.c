@@ -16,6 +16,8 @@
 // 3 = SimpleFS
 int test = 3;
 int use_global_test = FALSE;
+int how_many_blocks = 56;
+int use_file_for_test = 0;
 
 void stampa_in_binario(char* stringa) {
 	int i, j;
@@ -45,8 +47,13 @@ int space_in_dir(int * file_blocks, int dim) {
 int main(int agc, char** argv) {
 
 	if(!test) {
-		printf("\nCosa vuoi testare?\n1 = BitMap\n2 = DiskDriver\n3 = SimpleFS\n\n >>> ");
+		printf("\nCosa vuoi testare?\n1 = BitMap\n2 = DiskDriver\n3 = SimpleFS\n\n>>> ");
 	  scanf("%d", &test);
+	}
+
+	if(!how_many_blocks) {
+		printf("\nDi quanti blocchi dovrà essere composto il disco?\n\n>>> ");
+	  scanf("%d", &how_many_blocks);
 	}
 
 	if(test == 1) {
@@ -66,11 +73,11 @@ int main(int agc, char** argv) {
 		DiskDriver disk;
 		BitMap bitmap;
 		if(use_global_test) {
-			DiskDriver_init(&disk, "test/test.txt", 15); 
+			DiskDriver_init(&disk, "test/test.txt", how_many_blocks); 
 		}else{
 			char disk_filename[255];
 			sprintf(disk_filename, "test/%d.txt", time(NULL));
-			DiskDriver_init(&disk, disk_filename, 15); 
+			DiskDriver_init(&disk, disk_filename, how_many_blocks); 
 		}
 		bitmap.num_bits = disk.header->bitmap_entries * 8;
 		bitmap.entries = disk.bitmap_data;
@@ -101,11 +108,11 @@ int main(int agc, char** argv) {
 		printf("\n+++ Test BitMap_get()");
 		DiskDriver disk;
 		if(use_global_test) {
-			DiskDriver_init(&disk, "test/test.txt", 15); 
+			DiskDriver_init(&disk, "test/test.txt", how_many_blocks); 
 		}else{
 			char disk_filename[255];
 			sprintf(disk_filename, "test/%d.txt", time(NULL));
-			DiskDriver_init(&disk, disk_filename, 15); 
+			DiskDriver_init(&disk, disk_filename, how_many_blocks); 
 		}
 		BitMap bitmap;
 		bitmap.num_bits = disk.header->bitmap_entries * 8;
@@ -144,11 +151,11 @@ int main(int agc, char** argv) {
 		SimpleFS fs;
 		DiskDriver disk;
 		if(use_global_test) {
-			DiskDriver_init(&disk, "test/test.txt", 15); 
+			DiskDriver_init(&disk, "test/test.txt", how_many_blocks); 
 		}else{
 			char disk_filename[255];
 			sprintf(disk_filename, "test/%d.txt", time(NULL));
-			DiskDriver_init(&disk, disk_filename, 30); 
+			DiskDriver_init(&disk, disk_filename, how_many_blocks); 
 		}
 		DirectoryHandle * directory_handle = SimpleFS_init(&fs, &disk);
 		if(directory_handle != NULL) {
@@ -217,8 +224,16 @@ int main(int agc, char** argv) {
 		printf("\n\n+++ Test SimpleFS_write()");
 		printf("\n    BitMap: ");
 		stampa_in_binario(disk.bitmap_data);
-		char stringa[1200];
-		strcpy(stringa, "Nel mezzo del cammin di nostra vita mi ritrovai per una selva oscura ché la diritta via era smarrita. Ahi quanto a dir qual era è cosa dura esta selva selvaggia e aspra e forte che nel pensier rinova la paura! Tant'è amara che poco è più morte; ma per trattar del ben ch'i' vi trovai, dirò de l'altre cose ch'i' v'ho scorte. Io non so ben ridir com'i' v'intrai, tant'era pien di sonno a quel punto che la verace via abbandonai. Ma poi ch'i' fui al piè d'un colle giunto, là dove terminava quella valle che m'avea di paura il cor compunto, guardai in alto, e vidi le sue spalle vestite già deNel mezzo del cammin di nostra vita mi ritrovai per una selva oscura ché la diritta via era smarrita. Ahi quanto a dir qual era è cosa dura esta selva selvaggia e aspra e forte che nel pensier rinova la paura! Tant'è amara che poco è più morte; ma per trattar del ben ch'i' vi trovai, dirò de l'altre cose ch'i' v'ho scorte. Io non so ben ridir com'i' v'intrai, tant'era pien di sonno a quel punto che la verace via abbandonai. Ma poi ch'i' fui al piè d'un colle giunto, là dove terminava quella valle che m'avea di paura il cor compunto, guardai in alto, e vidi le sue spalle vestite già d");
+		FILE * file_test = fopen("divina_commedia.txt", "r");
+		struct stat fileStat;
+		stat("divina_commedia.txt", &fileStat);
+		char stringa[fileStat.st_size];
+		printf("\n\nIL FILE CONTIENE %lu BYTES", fileStat.st_size);
+		if(use_file_for_test) {
+			fread(stringa, sizeof(char), fileStat.st_size, file_test);
+		}else{
+			strcpy(stringa, "Nel mezzo del cammin di nostra vita mi ritrovai per una selva oscura ché la diritta via era smarrita. Ahi quanto a dir qual era è cosa dura esta selva selvaggia e aspra e forte che nel pensier rinova la paura! Tant'è amara che poco è più morte; ma per trattar del ben ch'i' vi trovai, dirò de l'altre cose ch'i' v'ho scorte. Io non so ben ridir com'i' v'intrai, tant'era pien di sonno a quel punto che la verace via abbandonai. Ma poi ch'i' fui al piè d'un colle giunto, là dove terminava quella valle che m'avea di paura il cor compunto, guardai in alto, e vidi le sue spalle vestite già deNel mezzo del cammin di nostra vita mi ritrovai per una selva oscura ché la diritta via era smarrita. Ahi quanto a dir qual era è cosa dura esta selva selvaggia e aspra e forte che nel pensier rinova la paura! Tant'è amara che poco è più morte; ma per trattar del ben ch'i' vi trovai, dirò de l'altre cose ch'i' v'ho scorte. Io non so ben ridir com'i' v'intrai, tant'era pien di sonno a quel punto che la verace via abbandonai. Ma poi ch'i' fui al piè d'un colle giunto, là dove terminava quella valle che m'avea di paura il cor compunto, guardai in alto, e vidi le sue spalle vestite già d");
+		}
 		ret = SimpleFS_write(file_handle, stringa, strlen(stringa));
 		printf("\n    SimpleFS_write(file_handle, stringa, %zu) => %d", strlen(stringa), ret);
 		if(ret == strlen(stringa)) {
