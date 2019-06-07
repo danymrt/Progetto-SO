@@ -16,8 +16,8 @@
 // 3 = SimpleFS
 int test = 3;
 int use_global_test = FALSE;
-int how_many_blocks = 56;
-int use_file_for_test = 1;
+int how_many_blocks = 100;
+int use_file_for_test = 0;
 
 void stampa_in_binario(char* stringa) {
 	int i, j;
@@ -194,8 +194,7 @@ int main(int agc, char** argv) {
 			printf("\n    Errore nella creazione della cartella\n");
 			return;
 		}
-		printf("\n    BitMap: ");
-		stampa_in_binario(disk.bitmap_data);
+
 
 	 	// Test SimpleFS_readDir
 		printf("\n\n+++ Test SimpleFS_readDir()");
@@ -228,7 +227,6 @@ int main(int agc, char** argv) {
 		struct stat fileStat;
 		stat("divina_commedia.txt", &fileStat);
 		char stringa[fileStat.st_size];
-		printf("\n\nIL FILE CONTIENE %lu BYTES", fileStat.st_size);
 		if(use_file_for_test) {
 			fread(stringa, sizeof(char), fileStat.st_size, file_test);
 		}else{
@@ -288,8 +286,14 @@ int main(int agc, char** argv) {
 			SimpleFS_createFile(directory_handle, nomello);
 		}
 		printf("\n\nHo aggiunto %d files in \"pluto\"", directory_handle->dcb->num_entries);
+		elenco2 = malloc(directory_handle->dcb->num_entries * 255);
+		SimpleFS_readDir(elenco2, directory_handle);
+		for(i=0; i<directory_handle->dcb->num_entries; i++){
+			printf("\n%d => %d => %s", i, directory_handle->dcb->file_blocks[i], elenco2[i]);
+		}
 		SimpleFS_changeDir(directory_handle, "..");
 		strcpy(nome_file, "pluto");
+
 		printf("\n    BitMap => ");
 		stampa_in_binario(disk.bitmap_data);
 
@@ -305,6 +309,7 @@ int main(int agc, char** argv) {
 		}
 		printf("\n    BitMap => ");
 		stampa_in_binario(disk.bitmap_data);
+
 	}
 	printf("\n\n");
 }

@@ -84,6 +84,7 @@ void SimpleFS_format(SimpleFS* fs) {
   first_directory_block->fcb.size_in_blocks = count_blocks(first_directory_block->fcb.size_in_bytes);
   first_directory_block->fcb.is_dir = 1;
 	first_directory_block->num_entries = 0;
+	memset(first_directory_block->file_blocks, 0, sizeof(first_directory_block->file_blocks));
 
 	// Memorizziamo la FirstDirectoryBlock nel disco
 	DiskDriver_writeBlock(fs->disk, first_directory_block, fs->disk->header->first_free_block);
@@ -141,6 +142,7 @@ FileHandle* SimpleFS_createFile(DirectoryHandle* d, const char* filename) {
 
 	DiskDriver_writeBlock(d->sfs->disk, first_file_block, first_file_block->fcb.block_in_disk);
 	if(space_in_dir(d->dcb->file_blocks, sizeof(d->dcb->file_blocks))) {
+		//TODO: il file va inserito nel primo spazio libero dentro file blocks
 		d->dcb->file_blocks[d->dcb->num_entries] = first_file_block->fcb.block_in_disk;
 		d->dcb->num_entries++;
 		DiskDriver_writeBlock(d->sfs->disk, d->dcb, d->dcb->fcb.block_in_disk);
@@ -417,38 +419,36 @@ int SimpleFS_changeDir(DirectoryHandle* d, char* dirname) {
 
 	// Nel caso in cui dirname è ".." torno alla cartella genitore modificando Directory_Handle
 	if(strcmp(dirname,"..") == 0){
-		
 		// Se ci troviamo nella radice restituisco -1
 		if(strcmp(d->dcb->fcb.name,"/") == 0)
 			return -1;
 		else{
+			FirstDirectoryBlock * parent_dir = malloc(sizeof(FirstDirectoryBlock));
+			DiskDriver_readBlock(d->sfs->disk, parent_dir, d->directory->fcb.block_in_disk);
 			d->dcb = d->directory;
-			DiskDriver_readBlock(d->sfs->disk, d->directory, d->dcb->fcb.directory_block);
 			d->current_block = &(d->dcb->header);
 			d->pos_in_dir = 0;
 			d->pos_in_block = d->dcb->fcb.block_in_disk;
+			d->directory = parent_dir;
 			return 0;
 		}
 	}else{ // Caso in cui dirname è diverso da ".."
-		// Controllo se già mi trovo nella cartella dirname
-		if(strcmp(dirname, d->dcb->fcb.name) == 0){
-			return -1;	
+		// Controllo la directory esiste
+		//		In caso positivo mi ci sposto e modifico DirectoryHandle
+		// Se non esiste ritorno -1
+	 	int block = DirectoryExist(d, dirname);
+	 	if(block != -1){
+			FirstDirectoryBlock * child_dir = malloc(sizeof(FirstDirectoryBlock));
+			DiskDriver_readBlock(d->sfs->disk, child_dir, block);
+			d->directory = d->dcb;
+			d->current_block = &(d->dcb->header);
+			d->pos_in_dir = 0;
+			d->pos_in_block = block;
+			d->dcb = child_dir;
+			return 0;
 		}else{
-				// Controllo la directory esiste
-				//		In caso positivo mi ci sposto e modifico DirectoryHandle
-				// Se non esiste ritorno -1
-			 	int block = DirectoryExist(d,dirname);
-			 	if(block != -1){
-					DiskDriver_readBlock(d->sfs->disk, d->dcb, block);
-					d->directory = d->dcb;
-					d->current_block = &(d->dcb->header);
-					d->pos_in_dir = 0;
-					d->pos_in_block = block;
-					return 0;
-				}else{
-					return -1;			
-			}	
-		}
+			return -1;			
+		}	
 	}
 }
 
@@ -506,6 +506,7 @@ int SimpleFS_mkDir(DirectoryHandle* d, char* dirname) {
 	fdb->fcb.size_in_blocks = 0;
 	fdb->fcb.is_dir = 1;
 	fdb->num_entries = 0;
+	int i;
 	memset(fdb->file_blocks, 0 , sizeof(fdb->file_blocks));
 	DiskDriver_writeBlock(d->sfs->disk, fdb, fdb->fcb.block_in_disk);
 
@@ -568,13 +569,15 @@ int SimpleFS_mkDir(DirectoryHandle* d, char* dirname) {
 // if a directory, it removes recursively all contained files
 int SimpleFS_remove(DirectoryHandle* d, char* filename) {
 
+	printf("%s => ", filename);
+
 	// Se uno dei parametri è vuoto, esco senza fare nulla
 	if(d == NULL || filename == NULL) return -1;
 
 	int current_block, next_block, i, j;
 // TODO: Impossibile verificare questo if
 	// Se la cartella un blocco successivo
-	if(d->dcb->header.next_block != -1) { 
+	if(d->dcb->header.next_block != -1) {
 		int next_dir_block = d->dcb->header.next_block;
 		DirectoryBlock * db = malloc(sizeof(DirectoryBlock));
 		while(next_dir_block != -1) {
@@ -659,8 +662,10 @@ int SimpleFS_remove(DirectoryHandle* d, char* filename) {
 				FirstFileBlock * file_to_delete = malloc(sizeof(FirstFileBlock));
 				DiskDriver_readBlock(d->sfs->disk, file_to_delete, d->dcb->file_blocks[i]);
 				current_block = d->dcb->file_blocks[i];
+				printf(" %d => %s[%d]",i, file_to_delete->fcb.name, d->dcb->file_blocks[i]);
 				// Se è il file che sto cercando
 				if(strcmp(file_to_delete->fcb.name, filename) == 0){
+					printf(" => CORRISPONDE");
 					// Se non si tratta di una cartella
 					if(file_to_delete->fcb.is_dir == 0) {
 						// Se il file ha più di un blocco
@@ -688,9 +693,16 @@ int SimpleFS_remove(DirectoryHandle* d, char* filename) {
 						DiskDriver_readBlock(d->sfs->disk, fdb2, d->dcb->file_blocks[i]);
 						// Creo un DirectoryHandle da passare alle chiamate ricorsive
 						DirectoryHandle * dh = malloc(sizeof(DirectoryHandle));
+
+						for(i=0; i<fdb2->num_entries; i++){
+							printf("\n%d => %d", i, fdb2->file_blocks[i]);
+						}
+
 						dh->sfs = d->sfs;
 						dh->dcb = fdb2;
-						dh->directory = d->dcb;
+						FirstDirectoryBlock * parent_folder = malloc(sizeof(FirstDirectoryBlock));
+						DiskDriver_readBlock(d->sfs->disk, parent_folder, fdb2->fcb.directory_block);
+						dh->directory = parent_folder;
 						dh->current_block = &fdb2->header;
 						dh->pos_in_dir = 0;
 						dh->pos_in_block = 0;
@@ -719,17 +731,19 @@ int SimpleFS_remove(DirectoryHandle* d, char* filename) {
 							}
 // TODO: FINE
 						}else{
-							int remaining_entries;
+							int remaining_entries2;
 							// Se invece è formata da un solo blocco, leggo tutti i suoi elementi
-							for(j = 0, remaining_entries = fdb2->num_entries; j < sizeof(fdb2->file_blocks); j++) {
+							for(j = 0, remaining_entries2 = fdb2->num_entries; j < sizeof(fdb2->file_blocks); j++) {
 								// Se l'elemento contiene un blocco figlio
-								if(fdb2->file_blocks[j] > 0 && remaining_entries) {
+								printf("\n%d", fdb2->file_blocks[j]);
+								if(fdb2->file_blocks[j] > 0 && remaining_entries2) {
 									// Memorizzo le informazioni del suo figlio
 									FirstFileBlock * file_to_delete = malloc(sizeof(FirstFileBlock));
 									DiskDriver_readBlock(d->sfs->disk, file_to_delete, fdb2->file_blocks[j]);
+									printf("\n%d) Cancello %d - %s[%d] => ",remaining_entries2,j,file_to_delete->fcb.name, file_to_delete->fcb.block_in_disk);
 									// Chiamo ricorsivamente la funzione con il nome del figlio appena letto
 									SimpleFS_remove(dh, file_to_delete->fcb.name);
-									remaining_entries--;
+									remaining_entries2--;
 								}
 							}
 							// TODO: Cancellare, dalla cartella genitore, il record di questa cartella in file_blocks
