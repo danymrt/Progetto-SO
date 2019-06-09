@@ -61,7 +61,7 @@ void SimpleFS_format(SimpleFS* fs) {
 	// Azzero la BitMap di tutto il disco
 	int i;
 	BitMap bitmap;
-	bitmap.num_bits = fs->disk->header->num_blocks;
+	bitmap.num_bits = fs->disk->header->bitmap_entries * 8;
 	bitmap.entries = fs->disk->bitmap_data;
 	for(i = 0; i < bitmap.num_bits; i++) {
 		BitMap_set(&bitmap, i, 0);
@@ -106,8 +106,6 @@ FileHandle* SimpleFS_createFile(DirectoryHandle* d, const char* filename) {
 
 	// Se non ci sono blocchi liberi per creare il file, restituisco errore
 	if(d->sfs->disk->header->free_blocks < 1) return NULL; 
-	
-	if(SimpleFS_openFile(d, filename) != NULL) return NULL;
 
 	// Creo il FileHandle e inserisco le informazioni relative
 	FileHandle * file_handle = malloc(sizeof(FileHandle));
@@ -158,7 +156,8 @@ FileHandle* SimpleFS_createFile(DirectoryHandle* d, const char* filename) {
 				db_block = db->header.next_block;
 				DiskDriver_readBlock(d->sfs->disk, db, db_block);
 			}
-		}else if(!space_in_dir(db->file_blocks, sizeof(d->dcb->file_blocks))){ // In questo punto, dentro db abbiamo l'ultimo blocco esistente della cartella
+		}
+		if(!space_in_dir(db->file_blocks, sizeof(d->dcb->file_blocks))){ // In questo punto, dentro db abbiamo l'ultimo blocco esistente della cartella
 			new_db_block = DiskDriver_getFreeBlock(d->sfs->disk, 0);
 			DirectoryBlock * directory_block = malloc(sizeof(DirectoryBlock));
 			directory_block->header.next_block = -1;
@@ -174,7 +173,7 @@ FileHandle* SimpleFS_createFile(DirectoryHandle* d, const char* filename) {
 			db_block = new_db_block;
 		}
 		db->file_blocks[d->dcb->num_entries] = file_handle->fcb->fcb.block_in_disk;
-		d->dcb->num_entries++;
+		d->dcb->num_entries++; //TODO: questo non viene aggiornato 
 
 		// Scrivo, su un nuovo blocco (libero) la DirectoryBlock appena creata
 		DiskDriver_writeBlock(d->sfs->disk, db, db_block);
@@ -270,6 +269,7 @@ int SimpleFS_close(FileHandle* f) {
 // writes in the file, at current position for size bytes stored in data
 // overwriting and allocating new space if necessary
 // returns the number of bytes written
+
 // TODO: Fare in modo che la scrittura inizi da pos, e non dall'inizio
 int SimpleFS_write(FileHandle* f, void* data, int size) {
 
@@ -523,6 +523,7 @@ int SimpleFS_mkDir(DirectoryHandle* d, char* dirname) {
   //    l'indice del blocco in cui è memorizzata la cartella
 
 	if(space_in_dir(d->dcb->file_blocks, sizeof(d->dcb->file_blocks))) {
+		//TODO:il file va inserito nel primo spazio libero dentro file blocks
 		d->dcb->file_blocks[d->dcb->num_entries] = fdb->fcb.block_in_disk;
 		d->dcb->num_entries++;
 		DiskDriver_writeBlock(d->sfs->disk, d->dcb, d->dcb->fcb.block_in_disk);
@@ -538,7 +539,8 @@ int SimpleFS_mkDir(DirectoryHandle* d, char* dirname) {
 				db_block = db->header.next_block;
 				DiskDriver_readBlock(d->sfs->disk, db, db_block);
 			}
-		}else if(!space_in_dir(db->file_blocks, sizeof(d->dcb->file_blocks))){ // In questo punto, dentro db abbiamo l'ultimo blocco esistente della cartella
+		}
+		if(!space_in_dir(db->file_blocks, sizeof(d->dcb->file_blocks))){ // In questo punto, dentro db abbiamo l'ultimo blocco esistente della cartella
 			new_db_block = DiskDriver_getFreeBlock(d->sfs->disk, 0);
 			DirectoryBlock * directory_block = malloc(sizeof(DirectoryBlock));
 			directory_block->header.next_block = -1;
@@ -554,7 +556,7 @@ int SimpleFS_mkDir(DirectoryHandle* d, char* dirname) {
 			db_block = new_db_block;
 		}
 		db->file_blocks[d->dcb->num_entries] = fdb->fcb.block_in_disk;
-		d->dcb->num_entries++;
+		d->dcb->num_entries++; //TODO: non viene mai sovrascritto
 
 		// Scrivo, su un nuovo blocco (libero) la DirectoryBlock appena creata
 		DiskDriver_writeBlock(d->sfs->disk, db, db_block);

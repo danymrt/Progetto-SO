@@ -16,7 +16,7 @@
 // 3 = SimpleFS
 int test = 3;
 int use_global_test = FALSE;
-int how_many_blocks = 100;
+int how_many_blocks = 90;
 int use_file_for_test = 0;
 
 void stampa_in_binario(char* stringa) {
