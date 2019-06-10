@@ -32,16 +32,19 @@ int BitMap_indexToBlock(BitMapEntryKey entry) {
 		//Controlliamo che pos sia contenuto nella BitMap
 		if(pos > bitmap->num_bits) return -1;
 
+		// Dichiaro la BitMapEntryKey e la maschera per i bit
     BitMapEntryKey bmek = BitMap_blockToIndex(pos);
 		uint8_t mask = 1 << (7 - bmek.bit_num);
+
+		// Se bisogna impostare a "1", si mette l'OR, altrimenti si usa l'AND con la negazione della maschera
 		if(status){
 			bitmap->entries[bmek.entry_num] |= mask;
 		}else{
     	bitmap->entries[bmek.entry_num] &= ~(mask);
     }
 
+		// Restituisco il bit "status" dopo aver modificato la entry
     return status;
-
  }
 
 // Restituisce l'indice del primo bit avente status "status" nella bitmap bitmap, iniziando a cercare dalla posizione "start"
@@ -60,7 +63,7 @@ int BitMap_get(BitMap* bitmap, int start, int status) {
 		// Se sforiamo le entries, restituisce -1 perché "status" non è stato trovato
 		if(i == bitmap->num_bits) return -1;
 		BitMapEntryKey bmek = BitMap_blockToIndex(i);
-	 	result = (bitmap->entries[bmek.entry_num] & (1 << (7 - bmek.bit_num))); //TODO modificarlo
+	 	result = (bitmap->entries[bmek.entry_num] & (1 << (7 - bmek.bit_num))); 
 
 		// Se dobbiamo verificare "status=1", il risultato deve essere ">0", altrimenti deve essere "=0"
 		if(status == 1) {

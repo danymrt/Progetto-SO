@@ -34,15 +34,20 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 		disk->fd = file;
 		disk->header = (DiskHeader*) mmap(0, sizeof(DiskHeader) + bitmap_entries + (num_blocks*BLOCK_SIZE), PROT_READ | PROT_WRITE, MAP_SHARED, file, 0);
 		
-	}else{ // se il file è stato appena creato
+	}else{
+		// Se il file è stato appena creato
 		file = open(filename, O_CREAT | O_RDWR, 0666);
+
+		// Verifico che l'apertura sia avvenuta corretamente
 		if(!file) {
 			printf("C'è stato un errore nell'apertura del file. Il programma è stato bloccato.");
 			return;
 		}
+
+		// Memorizzo come file descriptor del disco il file appena aperto
 		disk->fd=file;
 
-		// alloco la memoria necessaria al file per evitare "bus error"
+		// Alloco la memoria necessaria al file per evitare "bus error"
 		int ret = posix_fallocate(file, 0, sizeof(DiskHeader) + bitmap_entries + num_blocks*BLOCK_SIZE);
 
 		// Creiamo un DiskHeader che andrà inserito nel DiskDriver
@@ -66,6 +71,8 @@ void DiskDriver_init(DiskDriver* disk, const char* filename, int num_blocks) {
 
 // reads the block in position block_num, returns -1 if the block is free accrding to the bitmap 0 otherwise 
 int DiskDriver_readBlock(DiskDriver* disk, void * dest, int block_num){
+
+	// Se il blocco da leggere è maggiore del numero di blocchi contenuti, restituisco un errore
 	if(block_num >= disk->header->num_blocks) return -1;
 
 	// Creo la bitmap che andrò ad utilizzare per la BitMap_get()
@@ -76,9 +83,10 @@ int DiskDriver_readBlock(DiskDriver* disk, void * dest, int block_num){
 	// Se il blocco che si vuole leggere è vuoto, restituiamo un errore
 	if(BitMap_get(&bitmap, block_num, 0) == block_num) return -1;
 	
-	//Leggo il blocco block_num e lo inserisco in dest
+	// Leggo il blocco block_num e lo inserisco in dest
 	memcpy(dest, disk->bitmap_data + disk->header->bitmap_entries + (block_num * BLOCK_SIZE), BLOCK_SIZE);
 
+	// Se non ho restituito nulla finora, vuol dire che la funzione è andata a buon fine
 	return 0;
 }
 
@@ -86,6 +94,7 @@ int DiskDriver_readBlock(DiskDriver* disk, void * dest, int block_num){
 // writes a block in position block_num, and alters the bitmap accordingly, returns -1 if operation not possible
 int DiskDriver_writeBlock(DiskDriver * disk, void * src, int block_num) {
 	
+	// Se il numero del blocco da scrivere è maggiore del numero di blocchi esistenti, restituisco un errore
 	if(block_num > disk->header->num_blocks) return -1;
 
 	// Creo la bitmap che andrò ad utilizzare per la BitMap_get()
@@ -150,7 +159,7 @@ int DiskDriver_getFreeBlock(DiskDriver* disk, int start) {
 	// Controllo che l'indice start non sia maggiore dei blocchi disponibili
 	if(start > disk->header->num_blocks) return -1;
 
-	//Controllo che DiskHeader sia inizzializzato
+	// Controllo che DiskHeader sia inizzializzato
 	if(disk->header->num_blocks <= 0 ) return -1;
 
 	// Controlliamo nella BitMap quale è il primo blocco libero
