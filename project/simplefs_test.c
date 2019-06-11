@@ -229,10 +229,25 @@ int main(int agc, char** argv) {
 			fread(stringa, sizeof(char), fileStat.st_size, file_test);
 		}else{
 			strcpy(stringa, "Nel mezzo del cammin di nostra vita mi ritrovai per una selva oscura ché la diritta via era smarrita. Ahi quanto a dir qual era è cosa dura esta selva selvaggia e aspra e forte che nel pensier rinova la paura! Tant'è amara che poco è più morte; ma per trattar del ben ch'i' vi trovai, dirò de l'altre cose ch'i' v'ho scorte. Io non so ben ridir com'i' v'intrai, tant'era pien di sonno a quel punto che la verace via abbandonai. Ma poi ch'i' fui al piè d'un colle giunto, là dove terminava quella valle che m'avea di paura il cor compunto, guardai in alto, e vidi le sue spalle vestite già deNel mezzo del cammin di nostra vita mi ritrovai per una selva oscura ché la diritta via era smarrita. Ahi quanto a dir qual era è cosa dura esta selva selvaggia e aspra e forte che nel pensier rinova la paura! Tant'è amara che poco è più morte; ma per trattar del ben ch'i' vi trovai, dirò de l'altre cose ch'i' v'ho scorte. Io non so ben ridir com'i' v'intrai, tant'era pien di sonno a quel punto che la verace via abbandonai. Ma poi ch'i' fui al piè d'un colle giunto, là dove terminava quella valle che m'avea di paura il cor compunto, guardai in alto, e vidi le sue spalle vestite già d");
+			//strcpy(stringa, "Nel mezzo del cammin");
 		}
 		ret = SimpleFS_write(file_handle, stringa, strlen(stringa));
 		printf("\n    SimpleFS_write(file_handle, stringa, %zu) => %d", strlen(stringa), ret);
 		if(ret == strlen(stringa)) {
+			printf("\n    Scrittura avvenuta correttamente");
+		}else{
+			printf("\n    Errore nella scrittura del file\n");
+		}
+		printf("\n    BitMap => ");
+		stampa_in_binario(disk.bitmap_data);
+
+		// Test SimpleFS_write() con pos != 0
+		printf("\n\n+++ Test SimpleFS_write()");
+		SimpleFS_seek(file_handle, 12);
+		ret = SimpleFS_write(file_handle, "i viaggi", 8);
+		printf("\n    SimpleFS_seek(file_handle, 12) => %d", SimpleFS_seek(file_handle, 12));
+		printf("\n    SimpleFS_write(file_handle, stringa, %d) => %d", 8, ret);
+		if(ret == 8) {
 			printf("\n    Scrittura avvenuta correttamente");
 		}else{
 			printf("\n    Errore nella scrittura del file\n");

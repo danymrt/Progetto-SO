@@ -254,6 +254,7 @@ int SimpleFS_readDir(char** names, DirectoryHandle* d) {
 	// Se uno dei parametri è vuoto, esco senza fare nulla
 	if(names == NULL || d == NULL) return -1;
 
+	// Creo un FirstDirectoryBlock in cui memorizzo le informazioni ottenute dal parametro
 	FirstDirectoryBlock * db = malloc(sizeof(FirstDirectoryBlock));
 	db = d->dcb;
 
@@ -336,42 +337,72 @@ int SimpleFS_close(FileHandle* f) {
 // overwriting and allocating new space if necessary
 // returns the number of bytes written
 
-// TODO: Fare in modo che la scrittura inizi da pos, e non dall'inizio
+// TODO: Nell'else, fare in modo che la scrittura inizi da pos, e non dall'inizio
+// !!!!! RICORDA CHE "pos" può trovarsi anche in un blocco successivo
 int SimpleFS_write(FileHandle* f, void* data, int size) {
 
 	// Se uno dei parametri è vuoto, esco senza fare nulla
 	if(f == NULL || data == NULL || size < 0) return -1;
 
 	int written_bytes = 0, written_blocks = 0;
-	if(size < sizeof(f->fcb->data)) {
-		memcpy(f->fcb->data, data, strlen(data));
+	int pos = f->pos_in_file;
+	f->pos_in_file = (int) (f->pos_in_file + strlen(data));
+
+	if(size + pos < sizeof(f->fcb->data)) {
+		memcpy(f->fcb->data+pos, data, strlen(data));
 		DiskDriver_writeBlock(f->sfs->disk, f->fcb, f->fcb->fcb.block_in_disk);
 		written_bytes = strlen(data);
 		written_blocks++;
 	}else{
-		int dim, current_block;
+		int dim = 0, current_block;
 		char * copy = malloc(strlen(data));
 		strcpy(copy, data);
 		int previous_block = f->fcb->fcb.block_in_disk;
 		int next_block = f->fcb->header.next_block;
 		int previous_index = f->fcb->header.block_in_file;
 
-		dim = sizeof(f->fcb->data);
-		memcpy(f->fcb->data, copy, dim);
-		DiskDriver_writeBlock(f->sfs->disk, f->fcb, f->fcb->fcb.block_in_disk);
-		copy += dim;
-		written_bytes += dim;
-		written_blocks++;
-
 		FileBlock * file = malloc(sizeof(FileBlock));
-		dim = strlen(copy) > sizeof(file->data) ? sizeof(file->data) : strlen(copy);
+
+		if(pos > sizeof(f->fcb->data)) {
+			pos = pos - sizeof(f->fcb->data);
+			if(next_block != -1) {
+				while(next_block != -1 && pos > sizeof(file->data)) {
+					DiskDriver_readBlock(f->sfs->disk, file, next_block);
+					pos -= sizeof(file->data);
+					previous_index++;
+					previous_block = next_block;
+					next_block = file->header.next_block;
+				}
+			}else{
+				while(pos > sizeof(file->data)) {
+					next_block = DiskDriver_getFreeBlock(f->sfs->disk, 0);
+					file->header.next_block = -1;
+					file->header.previous_block = previous_block;
+					file->header.block_in_file = previous_index;
+					pos -= sizeof(file->data);
+					previous_index++;
+					previous_block = next_block;
+					DiskDriver_writeBlock(f->sfs->disk, file, next_block);
+					next_block = -1;
+				}
+			}
+		}else{
+			dim = sizeof(f->fcb->data) - pos;
+			memcpy(f->fcb->data, copy, dim);
+			DiskDriver_writeBlock(f->sfs->disk, f->fcb, f->fcb->fcb.block_in_disk);
+			copy += dim;
+			written_bytes += dim;
+			written_blocks++;
+		}
+
+		dim = strlen(copy)+pos > sizeof(file->data) ? sizeof(file->data)-pos : strlen(copy);
 		while(dim != 0) {
 			if(next_block != -1) {
 				current_block = next_block;
 				DiskDriver_readBlock(f->sfs->disk, file, next_block);
 				next_block = file->header.next_block;
-				memset(file->data, '\0', sizeof(file->data));
-				memcpy(file->data, copy, dim);
+				memset(file->data+pos, '\0', sizeof(file->data)-pos);
+				memcpy(file->data+pos, copy, dim);
 				copy += dim;
 				written_bytes += dim;
 				DiskDriver_writeBlock(f->sfs->disk, file, current_block);
@@ -399,11 +430,11 @@ int SimpleFS_write(FileHandle* f, void* data, int size) {
 				DiskDriver_writeBlock(f->sfs->disk, file, current_block);
 				previous_block = current_block;
 			}
-			dim = strlen(copy) > sizeof(file->data) ? sizeof(file->data) : strlen(copy);
+			dim = strlen(copy)+pos > sizeof(file->data) ? sizeof(file->data)-pos : strlen(copy);
 			written_blocks++;
 		}
 	}
-	f->fcb->fcb.size_in_bytes = written_bytes;
+	f->fcb->fcb.size_in_bytes = pos + strlen(data) > f->fcb->fcb.size_in_bytes ? pos + strlen(data) : f->fcb->fcb.size_in_bytes;
 	f->fcb->fcb.size_in_blocks = written_blocks;
 	DiskDriver_writeBlock(f->sfs->disk, f->fcb, f->fcb->fcb.block_in_disk);
 	return written_bytes;
@@ -418,7 +449,7 @@ int SimpleFS_read(FileHandle* f, char* data, int size) {
 
 	// Memorizzo il primo blocco del file da leggere
 	FirstFileBlock * ffb = malloc(sizeof(FirstFileBlock));
-	ffb = f->fcb;
+	DiskDriver_readBlock(f->sfs->disk, ffb, f->fcb->fcb.block_in_disk);
 	int next_block = f->fcb->header.next_block;
 
 	// Formatto la stringa da restituire
@@ -450,7 +481,7 @@ int SimpleFS_seek(FileHandle* f, int pos) {
 	int dim = 0;
 
 	FirstFileBlock * ffb = malloc(sizeof(FirstFileBlock));
-	ffb = f->fcb;
+	DiskDriver_readBlock(f->sfs->disk, ffb, f->fcb->fcb.block_in_disk);
 	dim += sizeof(ffb->data);
 
 	if(ffb->header.next_block != -1) {
@@ -466,10 +497,10 @@ int SimpleFS_seek(FileHandle* f, int pos) {
 	// Controllo se pos rientra nel file
 	//	In caso negativo ritorno -1
 	//  Altrimenti sposto il puntatore
-	if(pos + f->pos_in_file > dim){
-		return -1;	
+	if(pos > dim){
+		return -1;
 	}else{
-		f->pos_in_file = pos + f->pos_in_file;
+		f->pos_in_file = pos;
 		return pos;
 	}
 
