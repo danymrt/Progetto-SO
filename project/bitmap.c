@@ -7,7 +7,8 @@
 #include <stdlib.h>
 
 
-// Prendiamo in ingresso il parametro "num" che rappresenta la posizione di un blocco nella memoria, lo convertiamo in due valori che rappresentano rispettivamente l'indice dell'entry e lo spiazzamento all'interno di essa
+// Prendiamo in ingresso il parametro "num" che rappresenta la posizione di un blocco nella memoria, 
+// lo convertiamo in due valori che rappresentano rispettivamente l'indice dell'entry e lo spiazzamento all'interno di essa
 // Converts a linear index to an index in the array, and a char that indicates the offset of the bit inside the array
 BitMapEntryKey BitMap_blockToIndex(int num) {
 	BitMapEntryKey blocco;

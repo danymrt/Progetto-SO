@@ -16,7 +16,6 @@
 // 3 = SimpleFS
 int test;
 int use_global_test = FALSE;
-int how_many_blocks = 50;
 int use_file_for_test = 0;
 
 void stampa_in_binario(char* stringa) {
@@ -51,11 +50,6 @@ int main(int agc, char** argv) {
 	  scanf("%d", &test);
 	}
 
-	if(!how_many_blocks) {
-		printf("\nDi quanti blocchi dovrà essere composto il disco?\n\n>>> ");
-	  scanf("%d", &how_many_blocks);
-	}
-
 	if(test == 1) {
 
 		// Test BitMap_blockToIndex
@@ -73,11 +67,11 @@ int main(int agc, char** argv) {
 		DiskDriver disk;
 		BitMap bitmap;
 		if(use_global_test) {
-			DiskDriver_init(&disk, "test/test.txt", how_many_blocks); 
+			DiskDriver_init(&disk, "test/test.txt", 50); 
 		}else{
 			char disk_filename[255];
 			sprintf(disk_filename, "test/%d.txt", time(NULL));
-			DiskDriver_init(&disk, disk_filename, how_many_blocks); 
+			DiskDriver_init(&disk, disk_filename, 50); 
 		}
 		bitmap.num_bits = disk.header->bitmap_entries * 8;
 		bitmap.entries = disk.bitmap_data;
@@ -108,11 +102,11 @@ int main(int agc, char** argv) {
 		printf("\n+++ Test BitMap_get()");
 		DiskDriver disk;
 		if(use_global_test) {
-			DiskDriver_init(&disk, "test/test.txt", how_many_blocks); 
+			DiskDriver_init(&disk, "test/test.txt", 50); 
 		}else{
 			char disk_filename[255];
 			sprintf(disk_filename, "test/%d.txt", time(NULL));
-			DiskDriver_init(&disk, disk_filename, how_many_blocks); 
+			DiskDriver_init(&disk, disk_filename, 50); 
 		}
 		BitMap bitmap;
 		bitmap.num_bits = disk.header->bitmap_entries * 8;
@@ -151,11 +145,11 @@ int main(int agc, char** argv) {
 		SimpleFS fs;
 		DiskDriver disk;
 		if(use_global_test) {
-			DiskDriver_init(&disk, "test/test.txt", how_many_blocks); 
+			DiskDriver_init(&disk, "test/test.txt", 50); 
 		}else{
 			char disk_filename[255];
 			sprintf(disk_filename, "test/%d.txt", time(NULL));
-			DiskDriver_init(&disk, disk_filename, how_many_blocks); 
+			DiskDriver_init(&disk, disk_filename, 50); 
 		}
 		DirectoryHandle * directory_handle = SimpleFS_init(&fs, &disk);
 		if(directory_handle != NULL) {

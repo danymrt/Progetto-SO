@@ -29,7 +29,7 @@ int BitMap_indexToBlock(BitMapEntryKey entry) {
 // Sets the bit at index pos in bitmap to status
  int BitMap_set(BitMap* bitmap, int pos, int status) {
 	
-		//Controlliamo che pos sia contenuto nella BitMap
+		// Controllo che pos sia contenuto nella BitMap
 		if(pos > bitmap->num_bits) return -1;
 
 		// Dichiaro la BitMapEntryKey e la maschera per i bit

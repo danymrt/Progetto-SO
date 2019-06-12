@@ -9,7 +9,8 @@
 #include <sys/stat.h>
 
 
-// Apre il file (creandolo, se necessario), allocando lo spazio necessario sul disco e calcolando quanto deve essere grane la mappa se il file è stato appena creato.
+// Apre il file (creandolo, se necessario), allocando lo spazio necessario sul disco e calcolando quanto deve essere grane la mappa se il file è 
+// stato appena creato.
 // Compila un Disk Header e riempie la Bitmap della dimensione appropriata con tutti 0 (per denotare lo spazio libero)
 // opens the file (creating it if necessary) allocates the necessary space on the disk calculates how big the bitmap should be
 // If the file was new compiles a disk header, and fills in the bitmap of appropriate size with all 0 (to denote the free space)

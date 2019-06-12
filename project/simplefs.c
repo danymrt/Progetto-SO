@@ -466,7 +466,8 @@ int SimpleFS_write(FileHandle* f, void* data, int size) {
 			written_blocks++;
 		}
 
-		// Se la posizione finale del puntatore è maggiore dello spazio a disposizione, scrivo la dimensione massima meno "pos", altrimenti scrivo tutta la stringa rimanente
+		// Se la posizione finale del puntatore è maggiore dello spazio a disposizione, scrivo la dimensione massima meno "pos", 
+		// altrimenti scrivo tutta la stringa rimanente
 		dim = strlen(copy)+pos > sizeof(file->data) ? sizeof(file->data)-pos : strlen(copy);
 
 		// Finché il numero di caratteri da scrivere è diverso da 0
@@ -563,7 +564,8 @@ int SimpleFS_read(FileHandle* f, char* data, int size) {
 		strcpy(data, ffb->data);
 		FileBlock * file = malloc(sizeof(FileBlock));
 
-		// Continuo a leggere, aggiungendo in coda, finché esistono blocchi successivi e il numero di caratteri da leggere è minore della dimensione della stringa da restituire
+		// Continuo a leggere, aggiungendo in coda, finché esistono blocchi successivi e il numero di caratteri da leggere è minore
+		// della dimensione della stringa da restituire
 		while(strlen(data) < size && next_block != -1) {
 			DiskDriver_readBlock(f->sfs->disk, file, next_block);
 			sprintf(data, "%s%s", data, file->data);
@@ -625,7 +627,8 @@ int SimpleFS_changeDir(DirectoryHandle* d, char* dirname) {
 			return -1;
 		}else{
 
-			// Se ci troviamo in una cartella che non è la radice, e si vuole passare alla cartella precedente, leggo tutte le informazioni della cartella genitore
+			// Se ci troviamo in una cartella che non è la radice, e si vuole passare alla cartella precedente, leggo tutte le informazioni
+			// della cartella genitore
 			FirstDirectoryBlock * parent_dir = malloc(sizeof(FirstDirectoryBlock));
 			DiskDriver_readBlock(d->sfs->disk, parent_dir, d->directory->fcb.block_in_disk);
 			d->dcb = d->directory;
