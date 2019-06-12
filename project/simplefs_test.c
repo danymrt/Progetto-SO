@@ -14,7 +14,7 @@
 // 1 = BitMap
 // 2 = DiskDriver
 // 3 = SimpleFS
-int test = 3;
+int test;
 int use_global_test = FALSE;
 int how_many_blocks = 50;
 int use_file_for_test = 0;
@@ -133,13 +133,13 @@ int main(int agc, char** argv) {
 		printf("\n\n+++ Test DiskDriver_readBlock()");
 		void * dest = malloc(BLOCK_SIZE);
 		printf("\n    Controlliamo tramite una readBlock(dest, 4)   => %d", DiskDriver_readBlock(&disk, dest, 4));
-		printf("\n    Dopo la readBlock, la dest contiene            => %s", (char *) dest);
+		printf("\n    Dopo la readBlock, la dest contiene           => %s", (char *) dest);
 
 		// Test DiskDriver_freeBlock
 		printf("\n\n+++ Test DiskDriver_freeBlock()");
 		printf("\n    Prima => ");
 		stampa_in_binario(bitmap.entries);
-		printf("\n    Libero il blocco %d, la funzione ritorna: %d",6,DiskDriver_freeBlock(&disk,6));
+		printf("\n    Libero il blocco %d, la funzione ritorna: %d", 4, DiskDriver_freeBlock(&disk, 4));
 		printf("\n    Dopo  => ");
 		stampa_in_binario(bitmap.entries);
 

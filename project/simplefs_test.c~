@@ -14,7 +14,7 @@
 // 1 = BitMap
 // 2 = DiskDriver
 // 3 = SimpleFS
-int test = 3;
+int test;
 int use_global_test = FALSE;
 int how_many_blocks = 50;
 int use_file_for_test = 0;
